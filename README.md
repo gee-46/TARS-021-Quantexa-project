@@ -491,11 +491,14 @@ streamlit run streamlit_app.py
 ```
 After the loader, the dashboard has tabs for adaptive control, people & fairness, multi-ambulance conflicts (QAOA vs SA vs Greedy), the solver arbiter, the Pareto slider, a simulator-vs-IBM-hardware comparison (hardware is opt-in) and a schematic Belagavi digital twin.
 
-### React / Vite Application
+### React Control Center (QuantumForce UI + Python API)
 ```bash
-npm install
-npm run dev
+pip install -r requirements.txt
+npm ci && npm run build
+python -m uvicorn api_server:app --port 8000     # UI + API at http://127.0.0.1:8000
+# development with hot reload: npm run dev   (proxies /api to 127.0.0.1:8000)
 ```
+The React app is a client of `api_server.py`, which returns results computed by the simulator, QUBO builder and solvers; it contains no hard-coded metrics. See [docs/frontend_integration.md](docs/frontend_integration.md) for the audit of the merged frontend, what was changed, and limitations.
 
 ---
 

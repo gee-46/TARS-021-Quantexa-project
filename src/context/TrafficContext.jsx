@@ -1,175 +1,248 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import {
-  getTrafficState,
-  runQuantumOptimization,
-  applyOptimizedSignals,
-  triggerTrafficEvent,
-  activateEmergencyCorridor,
-  restoreTraffic,
-  BASELINE_METRICS,
-  OPTIMIZED_METRICS,
+  getHealth,
+  getScenarios,
+  getNetwork,
+  simulate,
+  optimize,
+  runEmergency,
 } from '../services/api';
-import { INITIAL_INTERSECTIONS, INITIAL_ROADS, EMERGENCY_ROUTE } from '../services/networkGraph';
+import { buildIntersections, buildRoads, emergencyRoutes } from '../services/networkGraph';
 
 const TrafficContext = createContext(null);
+const DEFAULT_SCENARIO = 'scenario_e_two_emergency_conflict';
+const SEED = 42;
+
+const fmtClock = (s) => {
+  const m = Math.floor(s / 60).toString().padStart(2, '0');
+  const sec = (s % 60).toString().padStart(2, '0');
+  return `t=${m}:${sec}`;
+};
 
 export function TrafficProvider({ children }) {
-  const [intersections, setIntersections] = useState(INITIAL_INTERSECTIONS);
-  const [roads, setRoads] = useState(INITIAL_ROADS);
-  const [metrics, setMetrics] = useState(BASELINE_METRICS);
+  const [backend, setBackend] = useState({ status: 'connecting', info: null, error: null });
+  const [scenarios, setScenarios] = useState([]);
+  const [scenarioId, setScenarioId] = useState(DEFAULT_SCENARIO);
+  const [network, setNetwork] = useState(null);
+  const [baseline, setBaseline] = useState(null); // {plan, metrics}: fixed 30 s plan, no corridor
+  const [current, setCurrent] = useState(null); // {plan, metrics}: what is displayed
+  const [optimizationResult, setOptimizationResult] = useState(null);
+  const [emergencyResult, setEmergencyResult] = useState(null);
   const [isOptimized, setIsOptimized] = useState(false);
   const [isOptimizing, setIsOptimizing] = useState(false);
-  const [optimizationResult, setOptimizationResult] = useState(null);
   const [emergencyCorridorActive, setEmergencyCorridorActive] = useState(false);
+  const [emergencyBusy, setEmergencyBusy] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [selectedIntersectionId, setSelectedIntersectionId] = useState('I1');
-  const [activeEvents, setActiveEvents] = useState([
-    {
-      id: 'EVT-INIT',
-      title: 'Traffic System Synchronized',
-      location: '6 Connected Hubs Active',
-      timestamp: '08:00:00',
-      severity: 'INFO',
-      description: 'NetworkX topology and telemetry streaming active.',
-    },
-  ]);
+  const [activeEvents, setActiveEvents] = useState([]);
   const [latestNotification, setLatestNotification] = useState(null);
-  const [simTimeSeconds, setSimTimeSeconds] = useState(872); // T+00:14:32
+  const [clock, setClock] = useState(0);
 
-  // Simulation Clock Tick
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setSimTimeSeconds((prev) => prev + 1);
-    }, 1000);
-    return () => clearInterval(timer);
+  const pushEvent = useCallback((event) => {
+    setActiveEvents((prev) => [
+      { id: `EVT-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`, timestamp: new Date().toLocaleTimeString(), ...event },
+      ...prev.slice(0, 19),
+    ]);
   }, []);
 
-  const formatSimTime = (totalSec) => {
-    const hrs = Math.floor(totalSec / 3600).toString().padStart(2, '0');
-    const mins = Math.floor((totalSec % 3600) / 60).toString().padStart(2, '0');
-    const secs = (totalSec % 60).toString().padStart(2, '0');
-    return `T+${hrs}:${mins}:${secs}`;
-  };
+  const notify = useCallback((type, title, message) => setLatestNotification({ type, title, message }), []);
 
-  // Run QAOA Optimization
+  const fail = useCallback(
+    (err, title) => {
+      const message = err?.message || 'Unknown error';
+      if (err?.status === 0) setBackend((b) => ({ ...b, status: 'offline', error: message }));
+      notify('ERROR', title, message);
+      pushEvent({ title, location: 'QuantumFlow API', description: message, severity: 'ERROR' });
+    },
+    [notify, pushEvent],
+  );
+
+  // Model clock: loops through the simulated horizon (presentation only; drives the signal-phase display)
+  const duration = network?.duration_seconds || 300;
+  useEffect(() => {
+    const timer = setInterval(() => setClock((c) => (c + 1) % duration), 1000);
+    return () => clearInterval(timer);
+  }, [duration]);
+
+  const loadScenario = useCallback(
+    async (id) => {
+      setLoading(true);
+      setLatestNotification(null);
+      setOptimizationResult(null);
+      setEmergencyResult(null);
+      setIsOptimized(false);
+      setEmergencyCorridorActive(false);
+      try {
+        const net = await getNetwork(id);
+        const base = await simulate({ scenario: id, seed: SEED });
+        setNetwork(net);
+        setBaseline(base);
+        setCurrent(base);
+        setScenarioId(id);
+        setSelectedIntersectionId(net.nodes[0].id);
+        setBackend((b) => ({ ...b, status: 'online', error: null }));
+        pushEvent({
+          title: 'Scenario loaded',
+          location: net.title,
+          description: `${net.nodes.length} junctions, ${net.ambulances.length} emergency vehicle(s), fixed 30 s baseline simulated over ${net.duration_seconds} s (seed ${SEED}).`,
+          severity: 'INFO',
+        });
+      } catch (err) {
+        fail(err, 'Could not load scenario');
+      } finally {
+        setLoading(false);
+      }
+    },
+    [fail, pushEvent],
+  );
+
+  // Boot: health -> scenario list -> default scenario
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const [health, list] = await Promise.all([getHealth(), getScenarios()]);
+        if (cancelled) return;
+        setBackend({ status: 'online', info: health, error: null });
+        setScenarios(list);
+        await loadScenario(list.some((s) => s.id === DEFAULT_SCENARIO) ? DEFAULT_SCENARIO : list[0].id);
+      } catch (err) {
+        if (cancelled) return;
+        setBackend({ status: 'offline', info: null, error: err.message });
+        setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [loadScenario]);
+
   const handleRunOptimization = useCallback(async () => {
     setIsOptimizing(true);
     try {
-      const res = await runQuantumOptimization({ intersections, roads, metrics });
+      const res = await optimize({ scenario: scenarioId, seed: SEED });
       setOptimizationResult(res);
-      setLatestNotification({
-        type: 'SUCCESS',
-        title: 'Quantum Optimization Converged',
-        message: 'QAOA generated optimal signal timing schedule (Cost: -1842.38)',
-      });
-      return res;
+      notify('SUCCESS', 'Optimisation finished', res.verdict);
+      pushEvent({ title: 'QUBO solved (QAOA / SA / Greedy)', location: `best: ${res.best_solver}`, description: res.verdict, severity: 'INFO' });
     } catch (err) {
-      console.error('Optimization error:', err);
+      fail(err, 'Optimisation failed');
     } finally {
       setIsOptimizing(false);
     }
-  }, [intersections, roads, metrics]);
+  }, [scenarioId, notify, pushEvent, fail]);
 
-  // Apply QAOA Solution
-  const handleApplyOptimization = useCallback(async () => {
+  const handleApplyOptimization = useCallback(() => {
     if (!optimizationResult) return;
-    const applied = await applyOptimizedSignals(optimizationResult);
-    setIntersections(applied.intersections);
-    setMetrics(applied.metrics);
+    setCurrent(optimizationResult.optimized);
     setIsOptimized(true);
-    setLatestNotification({
-      type: 'SUCCESS',
-      title: 'Signals Applied',
-      message: 'Adaptive timing deployed across all 6 intersections. Wait time reduced by 38%.',
-    });
-  }, [optimizationResult]);
+    setEmergencyCorridorActive(false);
+    setEmergencyResult(null);
+    notify('SUCCESS', 'Plan applied', 'Simulated results now use the solver-chosen signal plan.');
+  }, [optimizationResult, notify]);
 
-  // Reset Signals
-  const handleResetSignals = useCallback(async () => {
-    const res = await restoreTraffic(INITIAL_INTERSECTIONS);
-    setIntersections(res.intersections);
-    setRoads(INITIAL_ROADS);
-    setMetrics(BASELINE_METRICS);
+  const handleResetSignals = useCallback(() => {
+    setCurrent(baseline);
     setIsOptimized(false);
     setEmergencyCorridorActive(false);
-    setOptimizationResult(null);
-    setLatestNotification({
-      type: 'INFO',
-      title: 'Signals Reset to Classical Baseline',
-      message: 'Fixed signal timing baseline restored.',
-    });
-  }, []);
+    setEmergencyResult(null);
+    notify('INFO', 'Baseline restored', 'Fixed 30 s plan, no emergency corridor.');
+  }, [baseline, notify]);
 
-  // Trigger Traffic Event
-  const handleTriggerEvent = useCallback(async (eventType) => {
-    const result = await triggerTrafficEvent(eventType, { intersections, roads, metrics });
-    setIntersections(result.intersections);
-    setRoads(result.roads);
-    setMetrics(result.metrics);
-    if (result.event && result.event.title) {
-      setActiveEvents((prev) => [
-        { ...result.event, id: `EVT-${Date.now()}` },
-        ...prev.slice(0, 8),
-      ]);
-      setLatestNotification({
-        type: result.event.severity === 'CRITICAL' ? 'ERROR' : 'WARNING',
-        title: result.event.title,
-        message: `${result.event.location} - ${result.event.description}`,
-      });
-    }
-  }, [intersections, roads, metrics]);
+  const hasAmbulances = (network?.ambulances?.length || 0) > 0;
 
-  // Activate Emergency Corridor
   const handleActivateCorridor = useCallback(async () => {
-    const result = await activateEmergencyCorridor({ intersections, roads, metrics });
-    setIntersections(result.intersections);
-    setMetrics(result.metrics);
-    setEmergencyCorridorActive(true);
-    setLatestNotification({
-      type: 'EMERGENCY',
-      title: '🚨 Emergency Green Corridor Active',
-      message: 'Ambulance A-17 route secured (I1 → I2 → I5 → I4 → Hospital). ETA: 7m 18s.',
-    });
-  }, [intersections, roads, metrics]);
+    if (!hasAmbulances) {
+      notify('WARNING', 'No emergency vehicle', 'Pick a scenario that includes an ambulance (D, E, F or a Belagavi-inspired one).');
+      return;
+    }
+    setEmergencyBusy(true);
+    try {
+      const res = await runEmergency({ scenario: scenarioId, seed: SEED, plan: current.plan });
+      setEmergencyResult(res);
+      setCurrent({ plan: res.plan, metrics: res.with_corridor });
+      setEmergencyCorridorActive(true);
+      const first = res.with_corridor.emergency_vehicle_results.map((v) => `${v.vehicle_id}: ${v.response_time ?? 'n/a'} s`).join(', ');
+      notify('EMERGENCY', 'Emergency corridor simulated', `Ambulance response with corridor - ${first}.`);
+      res.with_corridor.corridor_event_log
+        .filter((e) => /Conflict|activated|preempt/i.test(e.message))
+        .slice(0, 6)
+        .forEach((e) => pushEvent({ title: e.event_type, location: `sim t=${e.timestamp}s`, description: e.message, severity: 'EMERGENCY' }));
+    } catch (err) {
+      fail(err, 'Emergency simulation failed');
+    } finally {
+      setEmergencyBusy(false);
+    }
+  }, [hasAmbulances, scenarioId, current, notify, pushEvent, fail]);
 
-  // Restore Normal Traffic from Corridor
-  const handleRestoreTraffic = useCallback(async () => {
-    const result = await restoreTraffic(intersections);
-    setIntersections(result.intersections);
+  const handleRestoreTraffic = useCallback(() => {
+    if (emergencyResult) setCurrent({ plan: emergencyResult.plan, metrics: emergencyResult.without_corridor });
     setEmergencyCorridorActive(false);
-    setLatestNotification({
-      type: 'INFO',
-      title: 'Normal Signal Operations Restored',
-      message: 'Emergency preemption cleared across all route segments.',
-    });
-  }, [intersections]);
+    notify('INFO', 'Corridor off', 'Showing the same run without emergency preemption.');
+  }, [emergencyResult, notify]);
 
   const dismissNotification = () => setLatestNotification(null);
 
-  const selectedIntersection = intersections[selectedIntersectionId] || intersections.I1;
+  const intersections = useMemo(
+    () =>
+      buildIntersections({
+        network,
+        metrics: current?.metrics,
+        plan: current?.plan,
+        bestPlan: optimizationResult?.best_plan,
+        clock,
+      }),
+    [network, current, optimizationResult, clock],
+  );
+  const roads = useMemo(() => buildRoads(network, intersections), [network, intersections]);
+  const routes = useMemo(() => emergencyRoutes(network), [network]);
+  const emergencyRoute = useMemo(() => [...new Set(routes.flatMap((r) => r.route))], [routes]);
+
+  const selectedIntersection = intersections[selectedIntersectionId] || Object.values(intersections)[0] || null;
 
   const value = {
+    // backend + scenario
+    backend,
+    scenarios,
+    scenarioId,
+    selectScenario: loadScenario,
+    network,
+    loading,
+    seed: SEED,
+    // data
     intersections,
-    setIntersections,
     roads,
-    metrics,
+    metrics: current?.metrics || null,
+    baselineMetrics: baseline?.metrics || null,
+    currentPlan: current?.plan || null,
+    baselinePlan: baseline?.plan || null,
+    optimizationResult,
+    emergencyResult,
+    // flags
     isOptimized,
     isOptimizing,
-    optimizationResult,
     emergencyCorridorActive,
-    emergencyRoute: EMERGENCY_ROUTE,
+    emergencyBusy,
+    hasAmbulances,
+    // emergency routes (from the scenario's real ambulance configs)
+    emergencyRoute,
+    emergencyRoutes: routes,
+    // selection & notifications
     selectedIntersectionId,
     setSelectedIntersectionId,
     selectedIntersection,
     activeEvents,
     latestNotification,
     dismissNotification,
-    simulationTime: formatSimTime(simTimeSeconds),
-    systemStatus: 'ONLINE',
-    quantumEngineStatus: 'READY',
+    pushEvent,
+    notify,
+    // status
+    simulationTime: fmtClock(clock),
+    systemStatus: backend.status === 'online' ? 'ONLINE' : backend.status === 'offline' ? 'API OFFLINE' : 'CONNECTING',
+    quantumEngineStatus: 'AER SIMULATOR',
+    // actions
     handleRunOptimization,
     handleApplyOptimization,
     handleResetSignals,
-    handleTriggerEvent,
     handleActivateCorridor,
     handleRestoreTraffic,
   };

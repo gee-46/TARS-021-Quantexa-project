@@ -406,6 +406,19 @@ class TrafficSimulator:
             emergency_vehicle_results=emergency_vehicle_results,
             cross_street_person_delay=cross_person_delay,
             cross_street_vehicles=len(cross_all),
+            approach_mean_queue={
+                name: float(np.mean([snap[name] for snap in queue_history])) if queue_history else 0.0
+                for name in intersections
+            },
+            approach_mean_head_wait={
+                name: float(np.mean(approach_wait_tracker[name])) if approach_wait_tracker[name] else 0.0
+                for name in intersections
+            },
+            approach_max_head_wait={
+                name: float(max(approach_wait_tracker[name])) if approach_wait_tracker[name] else 0.0
+                for name in intersections
+            },
+            final_queues={name: int(len(queues[name])) for name in intersections},
         )
 
 

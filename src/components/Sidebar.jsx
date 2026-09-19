@@ -20,9 +20,9 @@ const navItems = [
   { path: '/traffic', label: 'Traffic Network', icon: Network },
   { path: '/quantum', label: 'Quantum Optimizer', icon: Cpu },
   { path: '/emergency', label: 'Emergency Corridor', icon: Siren },
-  { path: '/events', label: 'Events & Disruptions', icon: AlertTriangle },
-  { path: '/analytics', label: 'Analytics & Emissions', icon: BarChart3 },
-  { path: '/comparison', label: 'Classical vs Quantum', icon: GitCompare },
+  { path: '/events', label: 'Scenarios & Events', icon: AlertTriangle },
+  { path: '/analytics', label: 'Analytics & Trade-offs', icon: BarChart3 },
+  { path: '/comparison', label: 'Solver Comparison', icon: GitCompare },
   { path: '/architecture', label: 'System Architecture', icon: Layers },
 ];
 

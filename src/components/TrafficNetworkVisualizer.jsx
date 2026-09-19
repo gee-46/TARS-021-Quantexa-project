@@ -9,7 +9,7 @@ export default function TrafficNetworkVisualizer() {
     selectedIntersectionId,
     setSelectedIntersectionId,
     emergencyCorridorActive,
-    emergencyRoute,
+    emergencyRoutes,
   } = useTraffic();
 
   const [particleOffset, setParticleOffset] = useState(0);
@@ -40,15 +40,13 @@ export default function TrafficNetworkVisualizer() {
 
   const isEdgeInCorridor = (fromId, toId) => {
     if (!emergencyCorridorActive) return false;
-    for (let i = 0; i < emergencyRoute.length - 1; i++) {
-      if (
-        (emergencyRoute[i] === fromId && emergencyRoute[i + 1] === toId) ||
-        (emergencyRoute[i] === toId && emergencyRoute[i + 1] === fromId)
-      ) {
-        return true;
-      }
-    }
-    return false;
+    return emergencyRoutes.some(({ route }) =>
+      route.some(
+        (id, i) =>
+          i < route.length - 1 &&
+          ((id === fromId && route[i + 1] === toId) || (id === toId && route[i + 1] === fromId)),
+      ),
+    );
   };
 
   return (
@@ -79,7 +77,7 @@ export default function TrafficNetworkVisualizer() {
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
           <Navigation size={16} color="#00f5ff" />
           <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#f8fafc', letterSpacing: '0.02em' }}>
-            URBAN TOPOLOGY & LIVE TRAFFIC FLOW GRAPH
+            ARTERIAL TOPOLOGY & SIMULATED QUEUE LOAD
           </span>
           <span style={{
             fontSize: '0.68rem',
@@ -90,7 +88,7 @@ export default function TrafficNetworkVisualizer() {
             borderRadius: '4px',
             fontWeight: 600,
           }}>
-            NetworkX Model
+            Simulated arterial
           </span>
         </div>
 
@@ -121,7 +119,7 @@ export default function TrafficNetworkVisualizer() {
               fontWeight: 700,
             }}>
               <Ambulance size={12} color="#ef4444" />
-              <span>Ambulance A-17 Active</span>
+              <span>{emergencyRoutes.map((r) => r.id).join(', ')} routed</span>
             </div>
           )}
         </div>
@@ -255,7 +253,7 @@ export default function TrafficNetworkVisualizer() {
             const isSelected = selectedIntersectionId === node.id;
             const nodeColor = getNodeColor(node);
             const signalColor = getSignalBadgeColor(node.signal);
-            const isCorridorNode = emergencyCorridorActive && emergencyRoute.includes(node.id);
+            const isCorridorNode = emergencyCorridorActive && emergencyRoutes.some(({ route }) => route.includes(node.id));
 
             return (
               <g
@@ -415,7 +413,7 @@ export default function TrafficNetworkVisualizer() {
           gap: '6px',
         }}>
           <Sparkles size={12} color="#00f5ff" />
-          <span>Click any intersection to inspect live queue & signal parameters</span>
+          <span>Click a junction to inspect its simulated queue, waits and signal plan</span>
         </div>
       </div>
     </div>

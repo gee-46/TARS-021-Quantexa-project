@@ -24,20 +24,13 @@ from optimization.solver_arbiter import arbitrate_solvers, describe_arbiter_outc
 from simulation import belagavi
 from simulation.engine import TrafficSimulator
 from simulation.integration import run_adaptive_vs_static_comparison
-from simulation.scenario import SimulationScenario, create_canonical_scenarios
+from simulation.registry import all_scenarios
+from simulation.scenario import SimulationScenario
 
 DEFAULT_PLAN = {"I1": 30, "I2": 30, "I3": 30, "I4": 30}
 
 
 # --------------------------------------------------------------------------- helpers
-def all_scenarios() -> Dict[str, SimulationScenario]:
-    scenarios = dict(create_canonical_scenarios())
-    for kind in ("normal", "peak", "peak_two_ambulances"):
-        sc = belagavi.belagavi_scenario(kind)
-        scenarios[sc.scenario_id] = sc
-    return scenarios
-
-
 def _label(node: str, use_names: bool) -> str:
     return f"{belagavi.junction_name(node)} ({node})" if use_names else node
 
@@ -325,7 +318,7 @@ def _tab_pareto(sc: SimulationScenario, seed: int) -> None:
     c4.metric("Fairness (Jain)", f"{sel['jain_fairness_index']:.2f}")
     st.caption(
         f"Arterial delay {sel['arterial_person_delay']:,.0f} + cross-street delay {sel['cross_street_person_delay']:,.0f}. "
-        "Preemption mostly moves delay from the arterial to the cross streets; whether the total changes depends on cross-street demand (try the slider above). "
+        "lambda also changes the QUBO emergency weight, so the chosen signal plan can vary with lambda; arterial, cross-street and total delay depend on the scenario and cross-street demand (try the slider above). "
         "This is a modelling result on a toy network, not a recommendation for a real junction."
     )
     with st.expander("All points"):
@@ -402,6 +395,7 @@ def render_dashboard() -> None:
         seed = st.number_input("Random seed", 0, 10_000, 42)
         use_names = st.toggle("Show Belagavi-inspired junction labels", value=key.startswith("belagavi"))
         st.caption("Scenarios A–G are canonical benchmarks; Belagavi-inspired ones use assumed, not measured, demand.")
+        st.caption("React control center: `python -m uvicorn api_server:app --port 8000`, then open http://127.0.0.1:8000")
     sc = scenarios[key]
 
     tabs = st.tabs(["Adaptive", "People & fairness", "Ambulances", "Solver arbiter", "Pareto slider", "Noise & hardware", "Belagavi schematic"])

@@ -11,6 +11,7 @@ export default function OptimizationPipeline() {
     handleRunOptimization,
     handleApplyOptimization,
     handleResetSignals,
+    network,
   } = useTraffic();
 
   const [showQuboModal, setShowQuboModal] = useState(false);
@@ -21,7 +22,7 @@ export default function OptimizationPipeline() {
     { label: 'QUBO', icon: '⚛️' },
     { label: 'QAOA', icon: '⚡' },
     { label: 'OPTIMIZED SIGNALS', icon: '🚦' },
-    { label: 'IMPROVEMENT', icon: '📉' },
+    { label: 'SIMULATED RESULT', icon: '📉' },
   ];
 
   return (
@@ -46,7 +47,7 @@ export default function OptimizationPipeline() {
             </span>
           </div>
           <div style={{ fontSize: '0.72rem', color: '#c4b5fd', marginTop: '3px' }}>
-            Simulation Backend: <strong>Qiskit Aer Quantum Simulator (p=3 ansatz)</strong>
+            Backend: <strong>Qiskit Aer local simulator (QAOA p={optimizationResult?.qaoa?.p ?? 1}) + SA + Greedy</strong>
           </div>
         </div>
 
@@ -82,7 +83,7 @@ export default function OptimizationPipeline() {
       }}>
         <div style={{ background: 'rgba(0, 0, 0, 0.3)', padding: '8px', borderRadius: '6px', border: '1px solid rgba(139, 92, 246, 0.12)' }}>
           <div style={{ fontSize: '0.62rem', color: 'rgba(196, 181, 253, 0.7)', textTransform: 'uppercase' }}>Method</div>
-          <div style={{ fontSize: '0.8rem', fontWeight: 700, color: '#00f5ff', marginTop: '2px' }}>Hybrid QAOA</div>
+          <div style={{ fontSize: '0.8rem', fontWeight: 700, color: '#00f5ff', marginTop: '2px' }}>QAOA · SA · Greedy</div>
         </div>
         <div style={{ background: 'rgba(0, 0, 0, 0.3)', padding: '8px', borderRadius: '6px', border: '1px solid rgba(139, 92, 246, 0.12)' }}>
           <div style={{ fontSize: '0.62rem', color: 'rgba(196, 181, 253, 0.7)', textTransform: 'uppercase' }}>Formulation</div>
@@ -90,11 +91,11 @@ export default function OptimizationPipeline() {
         </div>
         <div style={{ background: 'rgba(0, 0, 0, 0.3)', padding: '8px', borderRadius: '6px', border: '1px solid rgba(139, 92, 246, 0.12)' }}>
           <div style={{ fontSize: '0.62rem', color: 'rgba(196, 181, 253, 0.7)', textTransform: 'uppercase' }}>Variables</div>
-          <div style={{ fontSize: '0.8rem', fontWeight: 700, color: '#fff', marginTop: '2px' }}>24 Binary</div>
+          <div style={{ fontSize: '0.8rem', fontWeight: 700, color: '#fff', marginTop: '2px' }}>{optimizationResult?.qubo?.variables ?? 12} binary</div>
         </div>
         <div style={{ background: 'rgba(0, 0, 0, 0.3)', padding: '8px', borderRadius: '6px', border: '1px solid rgba(139, 92, 246, 0.12)' }}>
           <div style={{ fontSize: '0.62rem', color: 'rgba(196, 181, 253, 0.7)', textTransform: 'uppercase' }}>Constraints</div>
-          <div style={{ fontSize: '0.8rem', fontWeight: 700, color: '#f59e0b', marginTop: '2px' }}>12 Quadratic</div>
+          <div style={{ fontSize: '0.8rem', fontWeight: 700, color: '#f59e0b', marginTop: '2px' }}>One-hot per junction</div>
         </div>
         <div style={{ background: 'rgba(0, 0, 0, 0.3)', padding: '8px', borderRadius: '6px', border: '1px solid rgba(139, 92, 246, 0.12)' }}>
           <div style={{ fontSize: '0.62rem', color: 'rgba(196, 181, 253, 0.7)', textTransform: 'uppercase' }}>Objective</div>
@@ -163,25 +164,31 @@ export default function OptimizationPipeline() {
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: isOptimized || optimizationResult ? '#10b981' : 'rgba(216, 207, 247, 0.7)' }}>
           <CheckCircle2 size={14} color={isOptimized || optimizationResult ? '#10b981' : 'rgba(139, 92, 246, 0.4)'} />
-          <span>Traffic state collected (6 intersections, 8 arterial corridors)</span>
+          <span>Traffic state collected ({network?.nodes?.length ?? '—'} junctions, {network?.edges?.length ?? '—'} arterial links)</span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: isOptimized || optimizationResult ? '#10b981' : 'rgba(216, 207, 247, 0.7)' }}>
           <CheckCircle2 size={14} color={isOptimized || optimizationResult ? '#10b981' : 'rgba(139, 92, 246, 0.4)'} />
-          <span>Network topology encoded into graph adjacency matrix</span>
+          <span>Upstream/downstream couplings encoded in the QUBO</span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: isOptimized || optimizationResult ? '#10b981' : 'rgba(216, 207, 247, 0.7)' }}>
           <CheckCircle2 size={14} color={isOptimized || optimizationResult ? '#10b981' : 'rgba(139, 92, 246, 0.4)'} />
-          <span>QUBO formulated (24 binary timing variables, 12 quadratic penalty terms)</span>
+          <span>QUBO formulated ({optimizationResult?.qubo?.variables ?? 12} binary variables: 4 junctions × 3 green durations)</span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: isOptimizing ? '#00f5ff' : isOptimized || optimizationResult ? '#10b981' : 'rgba(216, 207, 247, 0.7)' }}>
           <CheckCircle2 size={14} color={isOptimized || optimizationResult ? '#10b981' : 'rgba(139, 92, 246, 0.4)'} />
-          <span>{isOptimizing ? '⟳ Running QAOA optimization on Qiskit Aer statevector...' : 'QAOA converged to optimal phase timing'}</span>
+          <span>{isOptimizing ? '⟳ Running QAOA on Qiskit Aer, plus SA and Greedy...' : optimizationResult ? `Solved: best solver ${optimizationResult.best_solver.toUpperCase()}` : 'Waiting to solve'}</span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: isOptimized || optimizationResult ? '#10b981' : 'rgba(216, 207, 247, 0.7)' }}>
           <CheckCircle2 size={14} color={isOptimized || optimizationResult ? '#10b981' : 'rgba(139, 92, 246, 0.4)'} />
-          <span>Optimal signal schedule generated (Cost: -1842.38)</span>
+          <span>{optimizationResult ? `Signal plan ${Object.entries(optimizationResult.best_plan).map(([k, v]) => `${k}:${v}s`).join(' ')} (QUBO energy ${optimizationResult.best_energy.toFixed(2)})` : 'Signal plan not generated yet'}</span>
         </div>
       </div>
+
+      {optimizationResult && (
+        <div style={{ fontSize: '0.74rem', color: 'rgba(226, 232, 240, 0.9)', background: 'rgba(82, 39, 255, 0.1)', border: '1px solid rgba(139, 92, 246, 0.25)', borderRadius: '8px', padding: '8px 12px' }}>
+          {optimizationResult.verdict}
+        </div>
+      )}
 
       {/* Action Buttons */}
       <div style={{ display: 'flex', gap: '10px' }}>
@@ -211,7 +218,7 @@ export default function OptimizationPipeline() {
           {isOptimizing ? (
             <>
               <Activity size={16} className="spin" />
-              <span>Simulating QAOA on Qiskit Aer...</span>
+              <span>Solving (QAOA on Aer)...</span>
             </>
           ) : (
             <>

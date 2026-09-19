@@ -50,7 +50,7 @@ export default function TrafficNetworkPage() {
             TRAFFIC NETWORK & ADAPTIVE SIGNAL CONTROL
           </h1>
           <p style={{ fontSize: '0.8rem', color: 'rgba(216, 207, 247, 0.75)', margin: '4px 0 0 0' }}>
-            6-Hub Interconnected Grid with Dynamic Signal Coordination & Queue Balancing
+            Four-junction arterial (I1 → I4): simulated queues, waits and the signal plan in use
           </p>
         </div>
 
@@ -73,7 +73,7 @@ export default function TrafficNetworkPage() {
             }}
           >
             <Cpu size={15} />
-            <span>RUN QAOA OPTIMIZER</span>
+            <span>RUN QUBO OPTIMISER</span>
           </button>
 
           <button
@@ -149,7 +149,7 @@ export default function TrafficNetworkPage() {
         }}>
           <span>ADAPTIVE SIGNAL CONTROL TABLE</span>
           <span style={{ fontSize: '0.72rem', color: '#a78bfa', fontWeight: 600 }}>
-            {isOptimized ? '● Adaptive QAOA Signal Plan Deployed' : '● Classical Fixed-Time Plan Active'}
+            {isOptimized ? '● Solver-chosen plan applied (simulated)' : '● Fixed 30 s plan active'}
           </span>
         </div>
 
@@ -170,11 +170,11 @@ export default function TrafficNetworkPage() {
               }}>
                 <th style={{ padding: '10px 12px' }}>Intersection</th>
                 <th style={{ padding: '10px 12px' }}>Current Signal</th>
-                <th style={{ padding: '10px 12px' }}>Optimized Signal</th>
+                <th style={{ padding: '10px 12px' }}>Solver Plan</th>
                 <th style={{ padding: '10px 12px' }}>Current Duration</th>
-                <th style={{ padding: '10px 12px' }}>Optimized Duration</th>
-                <th style={{ padding: '10px 12px' }}>Queue Length</th>
-                <th style={{ padding: '10px 12px' }}>Density</th>
+                <th style={{ padding: '10px 12px' }}>Solver Green</th>
+                <th style={{ padding: '10px 12px' }}>Mean Queue</th>
+                <th style={{ padding: '10px 12px' }}>Queue Load</th>
                 <th style={{ padding: '10px 12px' }}>Action</th>
               </tr>
             </thead>
@@ -209,12 +209,12 @@ export default function TrafficNetworkPage() {
                         {node.name}
                       </td>
                       <td style={{ padding: '12px' }}>{getSignalBadge(node.signal)}</td>
-                      <td style={{ padding: '12px' }}>{getSignalBadge(node.optimizedSignal || 'GREEN')}</td>
+                      <td style={{ padding: '12px' }}>{node.optimizedSignal ? getSignalBadge(node.optimizedSignal) : <span style={{ color: 'rgba(196,181,253,.6)' }}>run optimiser</span>}</td>
                       <td style={{ padding: '12px', fontFamily: 'monospace', color: '#00f5ff' }}>
                         {node.signalDuration}s
                       </td>
                       <td style={{ padding: '12px', fontFamily: 'monospace', color: '#10b981', fontWeight: 700 }}>
-                        {node.optimizedDuration || 60}s
+                        {node.optimizedDuration === undefined ? '—' : `${node.optimizedDuration}s`}
                       </td>
                       <td style={{ padding: '12px', fontWeight: 700, color: node.queue > 30 ? '#ef4444' : '#fff' }}>
                         {node.queue} veh

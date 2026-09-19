@@ -1,147 +1,84 @@
-// NetworkX-compatible Graph Data Model for QuantumForce Urban Traffic Network
+// Presentation helpers that turn backend data into the node/edge objects the visual components draw.
+// Nothing here invents traffic data: queues, waits and plans come from the Python simulator via api.js.
+// Only the screen coordinates are presentation choices.
 
-export const INITIAL_INTERSECTIONS = {
-  I1: {
-    id: 'I1',
-    name: 'Cyber Central North',
-    x: 200,
-    y: 150,
-    density: 72,
-    queue: 24,
-    capacity: 85,
-    signal: 'RED',
-    signalDuration: 45,
-    optimizedSignal: 'GREEN',
-    optimizedDuration: 65,
-    connectedTo: ['I2', 'I3'],
-    lanes: 4,
-    incomingVehicles: 18,
-    outgoingVehicles: 14,
-    avgWaitTime: 52, // seconds
-    phase: 'North-South Green / East-West Red',
-  },
-  I2: {
-    id: 'I2',
-    name: 'Nexus Hub East',
-    x: 520,
-    y: 140,
-    density: 48,
-    queue: 14,
-    capacity: 62,
-    signal: 'GREEN',
-    signalDuration: 60,
-    optimizedSignal: 'GREEN',
-    optimizedDuration: 55,
-    connectedTo: ['I1', 'I4', 'I5'],
-    lanes: 4,
-    incomingVehicles: 12,
-    outgoingVehicles: 15,
-    avgWaitTime: 28,
-    phase: 'All-Phase Adaptive',
-  },
-  I3: {
-    id: 'I3',
-    name: 'Quantum Plaza West',
-    x: 180,
-    y: 400,
-    density: 91,
-    queue: 51,
-    capacity: 96,
-    signal: 'RED',
-    signalDuration: 50,
-    optimizedSignal: 'GREEN',
-    optimizedDuration: 75,
-    connectedTo: ['I1', 'I4'],
-    lanes: 3,
-    incomingVehicles: 28,
-    outgoingVehicles: 8,
-    avgWaitTime: 78,
-    phase: 'Heavy Congestion Queue Lock',
-  },
-  I4: {
-    id: 'I4',
-    name: 'Vertex Core South',
-    x: 500,
-    y: 410,
-    density: 63,
-    queue: 29,
-    capacity: 74,
-    signal: 'YELLOW',
-    signalDuration: 5,
-    optimizedSignal: 'GREEN',
-    optimizedDuration: 60,
-    connectedTo: ['I2', 'I3', 'I6', 'HOSPITAL'],
-    lanes: 6,
-    incomingVehicles: 22,
-    outgoingVehicles: 19,
-    avgWaitTime: 46,
-    phase: 'Transit Corridor Switch',
-  },
-  I5: {
-    id: 'I5',
-    name: 'Synapse Junction Mid',
-    x: 780,
-    y: 200,
-    density: 37,
-    queue: 9,
-    capacity: 48,
-    signal: 'GREEN',
-    signalDuration: 55,
-    optimizedSignal: 'GREEN',
-    optimizedDuration: 45,
-    connectedTo: ['I2', 'I6'],
-    lanes: 3,
-    incomingVehicles: 8,
-    outgoingVehicles: 11,
-    avgWaitTime: 22,
-    phase: 'Free Flow East Arterial',
-  },
-  I6: {
-    id: 'I6',
-    name: 'Hyperion Cross SouthEast',
-    x: 800,
-    y: 450,
-    density: 55,
-    queue: 18,
-    capacity: 67,
-    signal: 'GREEN',
-    signalDuration: 40,
-    optimizedSignal: 'YELLOW',
-    optimizedDuration: 30,
-    connectedTo: ['I4', 'I5'],
-    lanes: 4,
-    incomingVehicles: 15,
-    outgoingVehicles: 14,
-    avgWaitTime: 36,
-    phase: 'Harbor Link Balancing',
-  },
-  HOSPITAL: {
-    id: 'HOSPITAL',
-    name: 'City General Hospital (Emergency Hub)',
-    x: 350,
-    y: 530,
-    density: 20,
-    queue: 2,
-    capacity: 30,
-    signal: 'GREEN',
-    signalDuration: 90,
-    optimizedSignal: 'GREEN',
-    optimizedDuration: 90,
-    connectedTo: ['I4'],
-    lanes: 2,
-    isHospital: true,
-  },
-};
-
-export const INITIAL_ROADS = [
-  { id: 'R1', from: 'I1', to: 'I2', name: 'Central Express Blvd', capacity: 1800, speedLimit: 60, congestion: 'medium' },
-  { id: 'R2', from: 'I1', to: 'I3', name: 'West Corridor Pkwy', capacity: 1400, speedLimit: 50, congestion: 'high' },
-  { id: 'R3', from: 'I2', to: 'I4', name: 'Cross-Town Ave', capacity: 2000, speedLimit: 50, congestion: 'medium' },
-  { id: 'R4', from: 'I2', to: 'I5', name: 'East Ring Highway', capacity: 2400, speedLimit: 80, congestion: 'low' },
-  { id: 'R5', from: 'I3', to: 'I4', name: 'South Valley Way', capacity: 1600, speedLimit: 50, congestion: 'high' },
-  { id: 'R6', from: 'I5', to: 'I6', name: 'Harbor Link Road', capacity: 1800, speedLimit: 60, congestion: 'low' },
-  { id: 'R7', from: 'I4', to: 'I6', name: 'Metro South Transit', capacity: 2200, speedLimit: 60, congestion: 'medium' },
-  { id: 'R8', from: 'I4', to: 'HOSPITAL', name: 'Hospital Emergency Access', capacity: 1200, speedLimit: 40, congestion: 'low' },
+const LAYOUT = [
+  { x: 150, y: 330 },
+  { x: 400, y: 230 },
+  { x: 650, y: 230 },
+  { x: 860, y: 330 },
 ];
 
-export const EMERGENCY_ROUTE = ['I1', 'I2', 'I5', 'I4', 'HOSPITAL'];
+// Queue-load % is a display scale only: mean queue / reference vehicles (reference comes from the API).
+export function queueLoadPercent(meanQueue, reference) {
+  return Math.max(0, Math.min(100, Math.round((meanQueue / Math.max(1, reference)) * 100)));
+}
+
+// Same rule as the simulator's SignalState: green while (t mod cycle) < green duration.
+export function signalAt(greenSeconds, cycleLength, t) {
+  return t % cycleLength < greenSeconds ? 'GREEN' : 'RED';
+}
+
+export function congestionLabel(loadPercent) {
+  if (loadPercent >= 85) return 'high';
+  if (loadPercent >= 55) return 'medium';
+  return 'low';
+}
+
+/**
+ * Build the node map the visualizer/inspector expect.
+ * metrics: simulator metrics for the run currently displayed; plan/bestPlan: {I1: 30, ...}.
+ */
+export function buildIntersections({ network, metrics, plan, bestPlan, clock }) {
+  if (!network) return {};
+  const ref = network.queue_reference_vehicles;
+  const out = {};
+  network.nodes.forEach((n, i) => {
+    const pos = LAYOUT[i % LAYOUT.length];
+    const meanQueue = metrics?.approach_mean_queue?.[n.id] ?? n.initial_queue;
+    const load = queueLoadPercent(meanQueue, ref);
+    const green = plan?.[n.id] ?? 30;
+    const best = bestPlan?.[n.id];
+    out[n.id] = {
+      id: n.id,
+      name: n.name,
+      x: pos.x,
+      y: pos.y,
+      density: load,
+      capacity: load,
+      queue: Math.round(meanQueue),
+      initialQueue: n.initial_queue,
+      finalQueue: metrics?.final_queues?.[n.id],
+      meanHeadWait: metrics?.approach_mean_head_wait?.[n.id],
+      maxHeadWait: metrics?.approach_max_head_wait?.[n.id],
+      signal: signalAt(green, network.cycle_length, clock),
+      signalDuration: green,
+      optimizedDuration: best,
+      optimizedSignal: best === undefined ? undefined : 'GREEN',
+      arrivalRate: n.arrival_rate,
+      crossStreetRate: n.cross_street_rate,
+      busProbability: n.bus_probability,
+      connectedTo: network.edges.filter((e) => e.from === n.id || e.to === n.id).map((e) => (e.from === n.id ? e.to : e.from)),
+      phase: `Green ${green} s of a ${network.cycle_length} s cycle`,
+    };
+  });
+  return out;
+}
+
+export function buildRoads(network, intersections) {
+  if (!network) return [];
+  return network.edges.map((e) => {
+    const from = intersections[e.from];
+    return {
+      id: e.id,
+      from: e.from,
+      to: e.to,
+      name: `${e.from} → ${e.to}`,
+      congestion: congestionLabel(from ? from.density : 0),
+    };
+  });
+}
+
+export function emergencyRoutes(network) {
+  return (network?.ambulances || []).map((a) => ({ id: a.vehicle_id, priority: a.priority, route: a.route }));
+}

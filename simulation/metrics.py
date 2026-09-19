@@ -54,6 +54,10 @@ class SimulationMetrics:
     emergency_vehicle_results: List[Dict[str, Any]] = field(default_factory=list)
     cross_street_person_delay: float = 0.0
     cross_street_vehicles: int = 0
+    approach_mean_queue: Dict[str, float] = field(default_factory=dict)
+    approach_mean_head_wait: Dict[str, float] = field(default_factory=dict)
+    approach_max_head_wait: Dict[str, float] = field(default_factory=dict)
+    final_queues: Dict[str, int] = field(default_factory=dict)
 
     def to_dict(self) -> Dict[str, Any]:
         return asdict(self)

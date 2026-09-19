@@ -1,162 +1,126 @@
 import React, { useState } from 'react';
+import { Cpu, Zap, Layers, HelpCircle, Activity } from 'lucide-react';
 import OptimizationPipeline from '../components/OptimizationPipeline';
 import QuboExplanationModal from '../components/QuboExplanationModal';
 import { useTraffic } from '../context/TrafficContext';
-import { Cpu, Zap, Activity, CheckCircle2, GitBranch, Layers, Sparkles, HelpCircle } from 'lucide-react';
+import { runNoise } from '../services/api';
+import { PageHeader, Panel, DataTable, Note, Btn, Stat, StatGrid, fmt } from '../components/ui';
+
+const planText = (p) => Object.entries(p || {}).map(([k, v]) => `${k}:${v}s`).join('  ');
 
 export default function QuantumOptimizerPage() {
-  const { optimizationResult, isOptimized, isOptimizing } = useTraffic();
+  const { optimizationResult: r, scenarioId, seed, network, notify } = useTraffic();
   const [showModal, setShowModal] = useState(false);
+  const [noise, setNoise] = useState(null);
+  const [noiseBusy, setNoiseBusy] = useState(false);
+  const [noiseError, setNoiseError] = useState(null);
+
+  const canNoise = (network?.ambulances?.length || 0) >= 2;
+  const doNoise = async () => {
+    setNoiseBusy(true);
+    setNoiseError(null);
+    try {
+      setNoise(await runNoise({ scenario: scenarioId, seed }));
+    } catch (e) {
+      setNoiseError(e.message);
+      notify('ERROR', 'Noise comparison failed', e.message);
+    } finally {
+      setNoiseBusy(false);
+    }
+  };
+
+  const cands = r ? Object.values(r.arbiter.candidates) : [];
+  const b = r?.baseline.metrics;
+  const o = r?.optimized.metrics;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '22px', width: '100%' }}>
-      {/* Page Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div>
-          <h1 style={{ fontSize: '1.4rem', fontWeight: 800, color: '#fff', margin: 0, display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <Cpu size={24} color="#a855f7" />
-            QUANTUM OPTIMIZATION ENGINE
-          </h1>
-          <p style={{ fontSize: '0.8rem', color: 'rgba(216, 207, 247, 0.75)', margin: '4px 0 0 0' }}>
-            QUBO / Ising Hamiltonian Formulation Solved with Quantum Approximate Optimization Algorithm (QAOA)
-          </p>
-        </div>
+      <PageHeader
+        icon={<Cpu size={24} color="#a855f7" />}
+        title="QUBO OPTIMISATION ENGINE"
+        subtitle="Signal timing as a 12-variable QUBO, solved with QAOA (Qiskit Aer simulator), simulated annealing and a greedy baseline."
+        right={
+          <Btn tone="ghost" onClick={() => setShowModal(true)}>
+            <HelpCircle size={15} /> QUBO formulation
+          </Btn>
+        }
+      />
 
-        <button
-          onClick={() => setShowModal(true)}
-          style={{
-            background: 'linear-gradient(135deg, rgba(82, 39, 255, 0.3), rgba(168, 85, 247, 0.3))',
-            border: '1px solid rgba(168, 85, 247, 0.4)',
-            color: '#fff',
-            borderRadius: '8px',
-            padding: '8px 16px',
-            fontSize: '0.8rem',
-            fontWeight: 700,
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '6px',
-          }}
-        >
-          <HelpCircle size={15} />
-          <span>QUBO Formulation Details</span>
-        </button>
-      </div>
-
-      {/* Main Pipeline Panel */}
       <OptimizationPipeline />
 
-      {/* Quantum Execution Telemetry & Circuit Breakdown Grid */}
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: '1.2fr 1fr',
-        gap: '20px',
-      }}>
-        {/* QAOA Circuit & Ansatz Configuration */}
-        <div style={{
-          background: 'linear-gradient(135deg, rgba(16, 12, 34, 0.95) 0%, rgba(8, 6, 18, 0.98) 100%)',
-          border: '1px solid rgba(139, 92, 246, 0.2)',
-          borderRadius: '16px',
-          padding: '20px',
-          backdropFilter: 'blur(16px)',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '14px',
-        }}>
-          <div style={{ fontSize: '0.95rem', fontWeight: 800, color: '#fff', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Zap size={18} color="#00f5ff" />
-            QAOA CIRCUIT & SIMULATOR TELEMETRY
+      {!r && <Note>Run the optimiser to see solver energies, runtimes and the simulated before/after comparison for this scenario.</Note>}
+
+      {r && (
+        <>
+          <Panel title="SOLVER COMPARISON — SAME QUBO" icon={<Zap size={18} color="#00f5ff" />}>
+            <DataTable
+              columns={[
+                { key: 'solver', label: 'Solver', render: (c) => <strong>{c.solver_name.toUpperCase()}{c.solver_name === r.best_solver ? ' ★' : ''}</strong> },
+                { key: 'energy', label: 'QUBO energy (lower = better)', render: (c) => fmt.n(c.qubo_energy, 3) },
+                { key: 'rt', label: 'Runtime', render: (c) => `${fmt.n(c.runtime_seconds, 3)} s` },
+                { key: 'feas', label: 'Feasible', render: (c) => (c.is_feasible ? 'yes' : 'no') },
+                { key: 'plan', label: 'Plan', render: (c) => <code style={{ color: '#c4b5fd' }}>{planText(c.signal_plan)}</code> },
+              ]}
+              rows={cands.map((c) => ({ id: c.solver_name, ...c }))}
+            />
+            <Note tone="ok">
+              {r.verdict} QAOA: p={r.qaoa.p}, {r.qaoa.shots} shots, COBYLA maxiter {r.qaoa.maxiter}, backend {r.qaoa.backend}. No quantum advantage is claimed.
+            </Note>
+          </Panel>
+
+          <Panel title="WHAT THE PLAN DOES IN THE SIMULATOR" icon={<Activity size={18} color="#10b981" />}>
+            <StatGrid>
+              <Stat label="Avg wait (s/veh)" value={`${fmt.n(b.average_waiting_time)} → ${fmt.n(o.average_waiting_time)}`} sub="fixed 30 s → solver plan" />
+              <Stat label="Person-delay" value={`${fmt.int(b.total_person_delay)} → ${fmt.int(o.total_person_delay)}`} />
+              <Stat label="Throughput" value={`${fmt.int(b.throughput)} → ${fmt.int(o.throughput)}`} />
+              <Stat label="Jain fairness" value={`${fmt.n(b.jain_fairness_index, 3)} → ${fmt.n(o.jain_fairness_index, 3)}`} />
+              <Stat label="Max head wait (s)" value={`${fmt.n(b.max_approach_wait, 0)} → ${fmt.n(o.max_approach_wait, 0)}`} />
+            </StatGrid>
+            <Note tone="warn">{r.note} A lower QUBO energy does not guarantee a better simulated outcome, and the plan can make some metrics worse; both are shown as computed.</Note>
+          </Panel>
+        </>
+      )}
+
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+        <Panel title="QUBO TERMS" icon={<Layers size={18} color="#a855f7" />}>
+          {r ? (
+            <StatGrid min={120}>
+              {Object.entries(r.qubo.weights).map(([k, v]) => (
+                <Stat key={k} label={k.replace(/_/g, ' ')} value={fmt.n(v, 1)} />
+              ))}
+            </StatGrid>
+          ) : (
+            <div style={{ color: 'rgba(196,181,253,.7)', fontSize: '0.8rem' }}>Weights appear after a run.</div>
+          )}
+          <div style={{ fontSize: '0.74rem', color: 'rgba(196,181,253,.8)', lineHeight: 1.5 }}>
+            Each junction picks exactly one green duration from {'{15, 30, 45}'} s (one-hot). The objective weighs queue waiting, capacity pressure, throughput and upstream/downstream coupling.
           </div>
+        </Panel>
 
-          <div style={{
-            background: 'rgba(0, 0, 0, 0.4)',
-            borderRadius: '10px',
-            padding: '14px',
-            border: '1px solid rgba(139, 92, 246, 0.15)',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '10px',
-            fontFamily: 'monospace',
-            fontSize: '0.8rem',
-          }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-              <span style={{ color: 'rgba(196, 181, 253, 0.8)' }}>Quantum Framework:</span>
-              <span style={{ color: '#00f5ff', fontWeight: 700 }}>Qiskit 1.2 / Qiskit Aer</span>
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-              <span style={{ color: 'rgba(196, 181, 253, 0.8)' }}>Ansatz Depth (p):</span>
-              <span style={{ color: '#a855f7', fontWeight: 700 }}>p = 3 Layers (Alternating Mixer / Cost)</span>
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-              <span style={{ color: 'rgba(196, 181, 253, 0.8)' }}>Classical Optimizer:</span>
-              <span style={{ color: '#fff', fontWeight: 700 }}>COBYLA (Tolerance: 1e-4)</span>
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-              <span style={{ color: 'rgba(196, 181, 253, 0.8)' }}>Simulated Qubits:</span>
-              <span style={{ color: '#10b981', fontWeight: 700 }}>24 Qubits (Statevector simulator)</span>
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-              <span style={{ color: 'rgba(196, 181, 253, 0.8)' }}>Convergence Iterations:</span>
-              <span style={{ color: '#f59e0b', fontWeight: 700 }}>14 Classical-Quantum Loops</span>
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-              <span style={{ color: 'rgba(196, 181, 253, 0.8)' }}>Energy Ground State:</span>
-              <span style={{ color: '#38bdf8', fontWeight: 700 }}>E = -1842.38</span>
-            </div>
-          </div>
-
-          <div style={{
-            fontSize: '0.75rem',
-            color: 'rgba(216, 207, 247, 0.8)',
-            lineHeight: 1.5,
-            background: 'rgba(82, 39, 255, 0.1)',
-            padding: '10px 14px',
-            borderRadius: '8px',
-            border: '1px solid rgba(139, 92, 246, 0.2)',
-          }}>
-            <strong>Simulation Note:</strong> Computation executes via Qiskit Aer statevector simulation simulating noiseless 24-qubit unitary evolution. When connected to IBM Quantum or AWS Braket QPUs, circuit transpiles to native heavy-hex basis gates.
-          </div>
-        </div>
-
-        {/* QUBO Matrix & Cost Function Mapping */}
-        <div style={{
-          background: 'linear-gradient(135deg, rgba(16, 12, 34, 0.95) 0%, rgba(8, 6, 18, 0.98) 100%)',
-          border: '1px solid rgba(139, 92, 246, 0.2)',
-          borderRadius: '16px',
-          padding: '20px',
-          backdropFilter: 'blur(16px)',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '14px',
-        }}>
-          <div style={{ fontSize: '0.95rem', fontWeight: 800, color: '#fff', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Layers size={18} color="#a855f7" />
-            ISING COUPLING & PENALTY TERMS
-          </div>
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '0.78rem' }}>
-            <div style={{ background: 'rgba(0, 0, 0, 0.3)', padding: '10px 12px', borderRadius: '8px', border: '1px solid rgba(139, 92, 246, 0.12)' }}>
-              <div style={{ fontWeight: 700, color: '#f8fafc' }}>1. Local Phase Terms (Diagonal Q_ii)</div>
-              <div style={{ color: 'rgba(196, 181, 253, 0.75)', marginTop: '2px' }}>
-                Weights traffic queue pressure on current red arms vs clearance capacity on green arms.
-              </div>
-            </div>
-
-            <div style={{ background: 'rgba(0, 0, 0, 0.3)', padding: '10px 12px', borderRadius: '8px', border: '1px solid rgba(139, 92, 246, 0.12)' }}>
-              <div style={{ fontWeight: 700, color: '#f8fafc' }}>2. Inter-Hub Couplings (Off-Diagonal Q_ij)</div>
-              <div style={{ color: 'rgba(196, 181, 253, 0.75)', marginTop: '2px' }}>
-                Enforces coordinated green waves along corridors R1 (Central Blvd), R3, and R7 to prevent vehicle shockwaves.
-              </div>
-            </div>
-
-            <div style={{ background: 'rgba(0, 0, 0, 0.3)', padding: '10px 12px', borderRadius: '8px', border: '1px solid rgba(139, 92, 246, 0.12)' }}>
-              <div style={{ fontWeight: 700, color: '#f8fafc' }}>3. Quadratic Penalty Terms (Constraint λ)</div>
-              <div style={{ color: 'rgba(196, 181, 253, 0.75)', marginTop: '2px' }}>
-                Ensures exactly one non-conflicting phase per intersection is green simultaneously (λ = 1000 penalty).
-              </div>
-            </div>
-          </div>
-        </div>
+        <Panel title="IDEAL vs NOISY SIMULATION" icon={<Zap size={18} color="#f59e0b" />}>
+          {!canNoise ? (
+            <Note>Needs a scenario with two ambulances (E, F or Belagavi-inspired two-ambulance): the circuit is the conflict QUBO.</Note>
+          ) : (
+            <>
+              <Btn onClick={doNoise} disabled={noiseBusy}>{noiseBusy ? 'Sampling…' : 'Compare ideal vs noisy'}</Btn>
+              {noiseError && <Note tone="error">{noiseError}</Note>}
+              {noise && (
+                <DataTable
+                  columns={[
+                    { key: 'b', label: 'Backend', render: (x) => x.backend_name },
+                    { key: 'v', label: 'Valid orderings', render: (x) => `${fmt.n(x.valid_fraction * 100)}%` },
+                    { key: 'o', label: 'Hit optimum', render: (x) => `${fmt.n(x.optimal_probability * 100)}%` },
+                    { key: 't', label: 'Distance from ideal', render: (x) => fmt.n(x.tvd_vs_ideal, 3) },
+                  ]}
+                  rows={Object.values(noise.runs).map((x) => ({ id: x.kind, ...x }))}
+                />
+              )}
+              <Note tone="warn">
+                Simulation only, using a generic noise model. Real IBM hardware execution is optional future validation: the runtime path exists in the Python package but is unverified, and it is deliberately not reachable from this interface. {noise?.honesty_note}
+              </Note>
+            </>
+          )}
+        </Panel>
       </div>
 
       {showModal && <QuboExplanationModal onClose={() => setShowModal(false)} />}

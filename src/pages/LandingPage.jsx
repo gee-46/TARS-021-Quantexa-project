@@ -175,7 +175,7 @@ export default function LandingPage() {
               }}>
                 <div>
                   <VariableProximity
-                    label="A hybrid quantum-classical traffic optimization platform that dynamically coordinates signals across connected intersections to reduce congestion, waiting time, fuel use, and CO₂ emissions."
+                    label="A hybrid quantum-classical traffic optimisation simulator that plans signal timing across connected junctions and measures waiting time, person-delay, fairness and idling CO₂ in simulation."
                     fromFontVariationSettings="'wght' 350, 'opsz' 14"
                     toFontVariationSettings="'wght' 950, 'opsz' 40"
                     containerRef={contentContainerRef}
@@ -186,7 +186,7 @@ export default function LandingPage() {
 
                 <div style={{ color: 'rgba(220, 232, 255, 0.88)' }}>
                   <VariableProximity
-                    label="It also enables intelligent emergency green corridors, giving priority routes to ambulances while minimizing disruption to normal traffic."
+                    label="It also simulates emergency green corridors, resolves conflicts between ambulances with a small QUBO, and shows what preemption costs everyone else."
                     fromFontVariationSettings="'wght' 350, 'opsz' 14"
                     toFontVariationSettings="'wght' 950, 'opsz' 40"
                     containerRef={contentContainerRef}
@@ -258,7 +258,7 @@ export default function LandingPage() {
             animation: 'pulseSlow 2s infinite',
           }}
         >
-          <span>Scroll to Live Operations Center</span>
+          <span>Scroll to the Control Center</span>
           <ArrowDown size={16} color="#a855f7" />
         </div>
       </section>

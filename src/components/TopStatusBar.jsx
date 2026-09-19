@@ -11,9 +11,31 @@ export default function TopStatusBar() {
     emergencyCorridorActive,
     latestNotification,
     dismissNotification,
+    scenarios,
+    scenarioId,
+    selectScenario,
+    network,
+    backend,
+    loading,
   } = useTraffic();
 
+  const banners = (
+    <>
+      {backend.status === 'offline' && (
+        <div style={{ background: 'rgba(120, 20, 30, 0.9)', color: '#fecaca', fontSize: '0.75rem', padding: '8px 14px', borderTop: '1px solid rgba(239,68,68,.5)' }}>
+          QuantumFlow API unreachable: {backend.error}
+        </div>
+      )}
+      {network?.disclaimer && (
+        <div style={{ background: 'rgba(60, 40, 5, 0.85)', color: '#fde68a', fontSize: '0.7rem', padding: '6px 14px', borderTop: '1px solid rgba(245,158,11,.35)' }}>
+          {network.disclaimer}
+        </div>
+      )}
+    </>
+  );
+
   return (
+    <>
     <header style={{
       height: '64px',
       background: 'rgba(10, 8, 22, 0.85)',
@@ -57,7 +79,7 @@ export default function TopStatusBar() {
             padding: '3px 8px',
             borderRadius: '4px',
           }}>
-            SECTOR 4-METRO
+            SIMULATION
           </span>
         </div>
       </div>
@@ -96,7 +118,7 @@ export default function TopStatusBar() {
             color: '#6ee7b7',
           }}>
             <CheckCircle2 size={14} color="#10b981" />
-            QAOA OPTIMIZED
+            SOLVER PLAN APPLIED
           </div>
         ) : (
           <div style={{
@@ -111,7 +133,7 @@ export default function TopStatusBar() {
             border: '1px solid rgba(245, 158, 11, 0.35)',
             color: '#fcd34d',
           }}>
-            CLASSICAL BASELINE
+            FIXED-TIME BASELINE
           </div>
         )}
 
@@ -136,7 +158,7 @@ export default function TopStatusBar() {
           color: 'rgba(226, 232, 240, 0.8)',
         }}>
           <Activity size={14} color="#00f5ff" />
-          <span>Intersections: <strong style={{ color: '#fff' }}>6 Active</strong></span>
+          <span>Junctions: <strong style={{ color: '#fff' }}>{network?.nodes?.length ?? '—'}</strong></span>
         </div>
 
         {/* Quantum Engine */}
@@ -148,8 +170,21 @@ export default function TopStatusBar() {
           color: 'rgba(226, 232, 240, 0.8)',
         }}>
           <Cpu size={14} color="#a855f7" />
-          <span>Quantum Engine: <strong style={{ color: '#a855f7' }}>{quantumEngineStatus}</strong></span>
+          <span>QAOA backend: <strong style={{ color: '#a855f7' }}>{quantumEngineStatus}</strong></span>
         </div>
+
+        {/* Scenario selector (real scenarios from the backend) */}
+        <select
+          value={scenarioId}
+          disabled={loading || scenarios.length === 0}
+          onChange={(e) => selectScenario(e.target.value)}
+          aria-label="Scenario"
+          style={{ background: 'rgba(15,12,35,0.9)', color: '#e2e8f0', border: '1px solid rgba(139,92,246,0.4)', borderRadius: '6px', padding: '4px 8px', fontSize: '0.72rem', maxWidth: '260px' }}
+        >
+          {scenarios.map((s) => (
+            <option key={s.id} value={s.id}>{s.title}</option>
+          ))}
+        </select>
 
         {/* Sim Time */}
         <div style={{
@@ -222,5 +257,7 @@ export default function TopStatusBar() {
         </div>
       )}
     </header>
+    {banners}
+    </>
   );
 }
