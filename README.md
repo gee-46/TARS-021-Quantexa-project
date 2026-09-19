@@ -451,3 +451,18 @@ The backend validation was established on the following verified environment:
 Developed as part of the Quantexa Hackathon by the TARS-021 engineering team.
 - **Repository**: [gee-46/TARS-021-Quantexa-project](https://github.com/gee-46/TARS-021-Quantexa-project)
 - **Team**: TARS-021
+
+---
+
+## 19. Web Dashboard Quickstart
+
+### Python / Streamlit Command Center
+```bash
+streamlit run streamlit_app.py
+```
+
+### React / Vite Application
+```bash
+npm install
+npm run dev
+```
