@@ -7,6 +7,8 @@ Provides quantitative traffic outcome records calculated directly from microscop
 - average_queue: Mean queue length across all intersections over time.
 - throughput: Total vehicles reaching destination and exiting the network.
 - emergency_response_time: Travel seconds from entry to completion for emergency vehicle.
+- person_delay: Total person-seconds of waiting delay across all vehicle passengers.
+- jain_fairness_index: Mathematical fairness across approach wait distributions.
 """
 
 from dataclasses import dataclass, asdict, field
@@ -38,6 +40,17 @@ class SimulationMetrics:
     emergency_corridor_enabled: bool = False
     simulation_duration: int = 300
     seed: Optional[int] = None
+    total_person_delay: float = 0.0
+    average_person_delay: float = 0.0
+    total_passengers_served: int = 0
+    jain_fairness_index: float = 1.0
+    max_approach_wait: float = 0.0
+    starvation_violations: int = 0
+    idle_vehicle_seconds: float = 0.0
+    estimated_fuel_liters: float = 0.0
+    estimated_co2_kg: float = 0.0
+    active_emergencies_count: int = 0
+    resolved_emergency_conflicts: int = 0
 
     def to_dict(self) -> Dict[str, Any]:
         return asdict(self)
@@ -55,6 +68,11 @@ class SimulationMetrics:
             throughput=float(self.throughput),
             emergency_response_time=self.emergency_response_time,
             emergency_delay=self.emergency_waiting_time,
+            person_delay=self.total_person_delay,
+            jain_fairness_index=self.jain_fairness_index,
+            max_approach_wait=self.max_approach_wait,
+            starvation_violations=float(self.starvation_violations),
+            idle_vehicle_seconds=self.idle_vehicle_seconds,
+            estimated_fuel_liters=self.estimated_fuel_liters,
+            estimated_co2_kg=self.estimated_co2_kg,
         )
-
-

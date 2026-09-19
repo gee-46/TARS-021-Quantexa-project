@@ -372,19 +372,30 @@ TARS-021-Quantexa-project/
 │   ├── ising_mapping.md                # QUBO to Ising transformation proofs & verification
 │   ├── integration_contract.md         # Data schemas, backend API, & serialization contract
 │   └── final_validation.md             # Complete end-to-end regression & validation report
+├── docs/
+│   ├── architecture.md                 # Full system architecture and end-to-end pipeline
+│   ├── objective_design.md             # QUBO mathematical formulations and penalties
+│   ├── multi_emergency.md              # Multi-vehicle emergency arbitration and conflict QUBO
+│   ├── benchmark_methodology.md        # Reproducible benchmarking and evaluation protocol
+│   ├── limitations.md                  # Modeling assumptions and quantum computing disclaimers
+│   ├── upgrade_audit.md                # Phase-by-phase hardening and upgrade audit
+│   └── integration_contract.md         # Telemetry schemas and serialization contracts
 ├── examples/
 │   └── run_quantumflow_demo.py         # Reproducible canonical demonstration runner
 ├── optimization/
 │   ├── __init__.py                     # Module exports
 │   ├── variables.py                    # Canonical 12-variable indexing & topology mappings
-│   ├── traffic_objectives.py           # Objective function mathematical components
+│   ├── traffic_objectives.py           # Objective function components, people-weighting & Jain fairness
 │   ├── onehot.py                       # One-hot penalty formulation
 │   ├── coupling.py                     # Inter-intersection coupling penalties
-│   ├── emergency.py                    # Static emergency corridor constraints
+│   ├── emergency.py                    # Emergency corridor constraints
+│   ├── emergency_conflict.py           # Multi-emergency conflict QUBO & priority sequencing
+│   ├── solver_arbiter.py               # Objective comparative benchmark (QAOA vs SA vs Greedy)
+│   ├── pareto.py                       # Multi-objective Pareto trade-off curve evaluator (lambda sweep)
 │   ├── qubo_model.py                   # Upper-triangular QUBOModel data structure
 │   ├── qubo_builder.py                 # QUBO matrix assembly & parameter weighting
 │   ├── ising_converter.py              # Exact QUBO to Ising Hamiltonian transformation
-│   ├── enumeration.py                  # Exhaustive 4096-state ground truth solver
+│   ├── enumeration.py                  # Exhaustive 4096-state ground truth solver & normalized metrics
 │   ├── qaoa_solver.py                  # Parameterized QAOA ansatz & Aer execution
 │   ├── production_qaoa.py              # Production 12-qubit QAOA solver with timeout protection
 │   ├── sa_solver.py                    # Classical Simulated Annealing baseline (dwave-neal)
@@ -392,15 +403,17 @@ TARS-021-Quantexa-project/
 │   ├── hybrid_solver.py                # QAOA primary solver with automated SA fallback
 │   ├── controllers.py                  # Standardized traffic controller adapters
 │   ├── benchmark_metrics.py            # TrialResult and telemetry containers
-│   └── benchmark.py                    # Controlled multi-scenario benchmark runner
+│   └── benchmark.py                    # Controlled multi-scenario benchmark runner (Scenarios A-G)
 ├── simulation/
 │   ├── __init__.py                     # Module exports
-│   ├── models.py                       # Microscopic Vehicle and SignalState dataclasses
-│   ├── scenario.py                     # SimulationScenario configuration specifications
+│   ├── models.py                       # Microscopic Vehicle, VehicleTypeConfig, and SignalState
+│   ├── scenario.py                     # SimulationScenario & canonical factory (Scenarios A-G)
+│   ├── adaptive_controller.py          # Closed-loop rolling horizon replanning controller
 │   ├── emergency_events.py             # Event types, modes, and EmergencyEvent records
-│   ├── emergency_controller.py         # Dynamic route-aware green corridor controller
+│   ├── emergency_controller.py         # Dynamic route-aware multi-emergency green corridor controller
+│   ├── emissions.py                    # Idling vehicle delay, fuel burn, and CO2 emissions model
 │   ├── engine.py                       # Discrete-time microscopic TrafficSimulator
-│   ├── metrics.py                      # SimulationMetrics calculations
+│   ├── metrics.py                      # SimulationMetrics calculations & Jain fairness
 │   └── integration.py                  # End-to-end pipeline runner & JSON serialization
 └── tests/
     ├── __init__.py
@@ -411,6 +424,13 @@ TARS-021-Quantexa-project/
     ├── test_sa_solver.py               # Simulated annealing baseline tests
     ├── test_decoder.py                 # One-hot and emergency feasibility tests
     ├── test_hybrid_solver.py           # Hybrid fallback and timeout tests
+    ├── test_adaptive_controller.py     # Rolling horizon adaptive replanning tests
+    ├── test_emergency_conflict.py      # Multi-emergency conflict QUBO tests
+    ├── test_solver_arbiter.py          # QAOA vs SA vs Greedy arbiter tests
+    ├── test_people_metrics.py          # Passenger occupancy & person-delay tests
+    ├── test_fairness.py                # Jain fairness & starvation penalty tests
+    ├── test_emissions.py               # Deterministic fuel & CO2 emissions tests
+    ├── test_pareto.py                  # Pareto multi-objective lambda sweep tests
     ├── test_benchmark.py               # Benchmark framework tests
     ├── test_simulation.py              # Microscopic traffic simulator tests
     ├── test_emergency_corridor.py      # Dynamic green corridor & recovery tests

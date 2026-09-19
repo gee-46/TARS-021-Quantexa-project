@@ -70,9 +70,17 @@ class HybridSolveResult:
     runtime_seconds: float
     error: Optional[str] = None
 
+    @property
+    def plan(self) -> Optional[Dict[str, int]]:
+        return self.signal_plan
+
+    @property
+    def energy(self) -> float:
+        return self.best_energy
+
 
 def solve_hybrid(
-    qubo_model: QUBOModel,
+    qubo_model: Optional[QUBOModel] = None,
     qaoa_p: int = 1,
     qaoa_maxiter: int = 30,
     qaoa_shots: int = 1024,
@@ -86,31 +94,24 @@ def solve_hybrid(
     emergency_constraints: Optional[Any] = None,
     **kwargs: Any,
 ) -> HybridSolveResult:
-    """Orchestrate hybrid optimization: QAOA first, with classical Simulated Annealing fallback.
+    """Orchestrate hybrid optimization: QAOA first, with classical Simulated Annealing fallback."""
+    if qubo_model is None:
+        if "qubo" in kwargs:
+            qubo_model = kwargs.pop("qubo")
+        else:
+            raise ValueError("qubo_model must be provided to solve_hybrid.")
 
-    Args:
-        qubo_model: Target upper-triangular QUBOModel.
-        qaoa_p: QAOA circuit depth (default 1).
-        qaoa_maxiter: Max COBYLA iterations for QAOA (default 30).
-        qaoa_shots: Measurement shots for QAOA (default 1024).
-        qaoa_seed: Deterministic random seed for QAOA simulator (default 42).
-        qaoa_timeout_seconds: Timeout threshold in seconds for QAOA (default 60.0).
-        sa_num_reads: Number of SA reads if fallback is triggered (default 100).
-        sa_num_sweeps: Number of SA sweeps per read (default 1000).
-        sa_seed: Deterministic random seed for SA sampler (default 42).
-        require_onehot: If True, candidate must satisfy one-hot constraints to avoid fallback (default True).
-        require_emergency_valid: If True, candidate must satisfy active emergency route (default True).
-        emergency_constraints: Optional active EmergencyConstraints instance.
-        **kwargs: Additional options forwarded to underlying solvers.
+    if "seed" in kwargs and kwargs["seed"] is not None:
+        s = int(kwargs.pop("seed"))
+        qaoa_seed = s
+        sa_seed = s
 
-    Returns:
-        HybridSolveResult: Structured, traceable optimization result.
-    """
     start_time = time.perf_counter()
 
     # 1. Attempt Production QAOA First
     qaoa_res: Optional[ProductionQAOAResult] = None
     fallback_reason: Optional[str] = None
+
 
     try:
         qaoa_res = solve_production_qaoa(

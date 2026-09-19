@@ -1,18 +1,18 @@
 """Local Traffic Objective Components Formulation and Validation.
 
-Implements the three local intersection objective terms:
+Implements local intersection objective terms:
 1. Waiting Penalty (H_wait):
        H_wait = B * sum_{i, t} (q_i / t) * x_{i, t}
+   Optionally person-weighted if person_weighted=True.
 2. Capacity Overflow Penalty (H_capacity):
        H_capacity = C * sum_{i, t} max(0, d_i - threshold) * (45 - t) * x_{i, t}
 3. Throughput Reward (H_throughput):
        H_throughput = E * sum_{i, t} min(q_i, mu * t) * x_{i, t}
-
-In the global MINIMIZATION objective:
-       H_local = H_wait + H_capacity - H_throughput
+4. Starvation & Fairness Penalty (H_fairness / H_starvation):
+       Penalizes under-allocating green time to starved approaches.
 
 Matrix Representation Properties:
-- All three traffic terms are strictly LINEAR in x_{i, t} (since x^2 = x for x in {0, 1}).
+- All traffic terms are strictly LINEAR in x_{i, t} (since x^2 = x for x in {0, 1}).
 - They modify ONLY diagonal entries Q[k, k].
 - Off-diagonal interaction entries remain strictly 0.0.
 - Constant energy offset contribution is exactly 0.0.
@@ -44,6 +44,10 @@ class TrafficObjectiveConfig:
         capacity_threshold: Critical density threshold (default 0.7).
         throughput_weight: Weight coefficient E for throughput service reward.
         service_rate: Flow saturation service rate parameter mu (vehicles/second).
+        person_weighted: If True, uses person-weighted queue counts for H_wait.
+        fairness_weight: Weight coefficient for Jain fairness / delay equity balancing.
+        starvation_penalty_weight: Weight coefficient for approaches exceeding max_wait_cap.
+        max_wait_cap: Maximum acceptable approach delay in seconds before starvation penalty activates.
     """
 
     wait_weight: float = 2.0  # B
@@ -51,6 +55,10 @@ class TrafficObjectiveConfig:
     capacity_threshold: float = 0.7
     throughput_weight: float = 1.0  # E
     service_rate: float = 1.0  # mu
+    person_weighted: bool = False
+    fairness_weight: float = 0.0
+    starvation_penalty_weight: float = 0.0
+    max_wait_cap: float = 120.0
 
 
 @dataclass(frozen=True)
@@ -58,29 +66,27 @@ class TrafficState:
     """Lightweight decoupled snapshot of the traffic network state.
 
     Attributes:
-        queues: Map of intersection ID to pending queue count q_i >= 0.
+        queues: Map of intersection ID to pending vehicle queue count q_i >= 0.
         densities: Map of intersection ID to density/demand ratio d_i in [0, 1+].
         capacities: Optional map of intersection ID to vehicle capacity C_i.
+        person_queues: Optional map of intersection ID to total pending passenger count.
+        approach_waiting_times: Optional map of intersection ID to maximum approach wait time.
     """
 
     queues: Dict[str, float]
     densities: Dict[str, float]
     capacities: Dict[str, float] = field(default_factory=dict)
+    person_queues: Dict[str, float] = field(default_factory=dict)
+    approach_waiting_times: Dict[str, float] = field(default_factory=dict)
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "TrafficState":
-        """Parse raw dictionary input from external simulator or mock state.
-
-        Supported structure:
-            {
-                "I1": {"queue": 20, "density": 0.65, "capacity": 40},
-                "I2": {"queue": 8, "density": 0.30, "capacity": 35},
-                ...
-            }
-        """
+        """Parse raw dictionary input from external simulator or mock state."""
         queues: Dict[str, float] = {}
         densities: Dict[str, float] = {}
         capacities: Dict[str, float] = {}
+        person_queues: Dict[str, float] = {}
+        approach_waiting_times: Dict[str, float] = {}
 
         for inter in INTERSECTIONS:
             inter_data = data.get(inter, {})
@@ -89,12 +95,46 @@ class TrafficState:
                 densities[inter] = float(inter_data.get("density", 0.0))
                 if "capacity" in inter_data:
                     capacities[inter] = float(inter_data["capacity"])
+                if "person_queue" in inter_data:
+                    person_queues[inter] = float(inter_data["person_queue"])
+                if "max_wait" in inter_data:
+                    approach_waiting_times[inter] = float(inter_data["max_wait"])
             else:
-                # Direct scalar fallback if provided
                 queues[inter] = float(inter_data) if inter_data else 0.0
                 densities[inter] = 0.0
 
-        return cls(queues=queues, densities=densities, capacities=capacities)
+        return cls(
+            queues=queues,
+            densities=densities,
+            capacities=capacities,
+            person_queues=person_queues,
+            approach_waiting_times=approach_waiting_times,
+        )
+
+
+def calculate_jain_fairness_index(values: Sequence[float]) -> float:
+    """Calculate Jain's Fairness Index across a sequence of approach metrics (e.g. wait times or service rates).
+
+    Formula:
+        J(x_1, ..., x_n) = (sum(x_i))^2 / (n * sum(x_i^2))
+
+    Properties:
+        - Bounded in [1/n, 1.0]
+        - 1.0 indicates perfectly equal distribution.
+        - If all inputs are zero, returns 1.0 (trivially fair).
+    """
+    if not values:
+        return 1.0
+    arr = np.array([max(0.0, float(v)) for v in values])
+    n = len(arr)
+    sum_x = np.sum(arr)
+    sum_sq = np.sum(arr**2)
+
+    if sum_sq == 0.0:
+        return 1.0
+
+    jain = float((sum_x**2) / (n * sum_sq))
+    return min(1.0, max(1.0 / n, jain))
 
 
 def add_wait_term(
@@ -106,13 +146,17 @@ def add_wait_term(
 
     Formula:
         For variable k = (i, t):
-            Q[k, k] += B * (q_i / t)
+            Q[k, k] += B * (q_eff_i / t)
     """
     state = traffic_state if isinstance(traffic_state, TrafficState) else TrafficState.from_dict(traffic_state)
     B = config.wait_weight
 
     for inter in INTERSECTIONS:
-        q_i = state.queues.get(inter, 0.0)
+        if config.person_weighted and state.person_queues:
+            q_i = state.person_queues.get(inter, state.queues.get(inter, 0.0))
+        else:
+            q_i = state.queues.get(inter, 0.0)
+
         for dur in DURATIONS:
             k = get_variable_index(inter, dur)
             coeff = B * (q_i / float(dur))
@@ -154,7 +198,7 @@ def add_throughput_term(
 ) -> np.ndarray:
     """Add -H_throughput linear reward contributions to matrix Q diagonal.
 
-    Throughput is a reward in a minimization problem, so its QUBO contribution is NEGATIVE:
+    Formula:
         For variable k = (i, t):
             Q[k, k] += -E * min(q_i, mu * t)
     """
@@ -173,15 +217,55 @@ def add_throughput_term(
     return Q
 
 
+def add_starvation_fairness_term(
+    Q: np.ndarray,
+    traffic_state: Union[TrafficState, Dict[str, Any]],
+    config: TrafficObjectiveConfig = TrafficObjectiveConfig(),
+) -> np.ndarray:
+    """Add starvation penalty and fairness balancing contributions to matrix Q diagonal.
+
+    Penalizes choosing shorter green durations (15s, 30s) when an approach is starving.
+    """
+    state = traffic_state if isinstance(traffic_state, TrafficState) else TrafficState.from_dict(traffic_state)
+    starv_w = config.starvation_penalty_weight
+    fair_w = config.fairness_weight
+    cap = config.max_wait_cap
+
+    if starv_w <= 0.0 and fair_w <= 0.0:
+        return Q
+
+    total_wait = sum(state.approach_waiting_times.values()) if state.approach_waiting_times else 0.0
+
+    for inter in INTERSECTIONS:
+        w_i = state.approach_waiting_times.get(inter, 0.0)
+        starv_excess = max(0.0, w_i - cap)
+
+        for dur in DURATIONS:
+            k = get_variable_index(inter, dur)
+            shortage = 45.0 - float(dur)
+
+            # Starvation penalty for exceeding threshold
+            if starv_w > 0.0 and starv_excess > 0.0:
+                Q[k, k] += starv_w * (starv_excess / cap) * shortage
+
+            # General fairness term proportional to approach wait share
+            if fair_w > 0.0 and total_wait > 0.0:
+                wait_share = w_i / total_wait
+                Q[k, k] += fair_w * wait_share * shortage
+
+    return Q
+
+
 def add_traffic_terms(
     Q: np.ndarray,
     traffic_state: Union[TrafficState, Dict[str, Any]],
     config: TrafficObjectiveConfig = TrafficObjectiveConfig(),
 ) -> np.ndarray:
-    """Add all three local traffic objective terms (H_wait + H_capacity - H_throughput) to Q."""
-    add_wait_term(Q, traffic_state, config)
-    add_capacity_term(Q, traffic_state, config)
-    add_throughput_term(Q, traffic_state, config)
+    """Apply all local traffic objective terms to the upper-triangular QUBO matrix Q."""
+    Q = add_wait_term(Q, traffic_state, config)
+    Q = add_capacity_term(Q, traffic_state, config)
+    Q = add_throughput_term(Q, traffic_state, config)
+    Q = add_starvation_fairness_term(Q, traffic_state, config)
     return Q
 
 
@@ -201,7 +285,11 @@ def evaluate_wait(
     total = 0.0
 
     for inter in INTERSECTIONS:
-        q_i = state.queues.get(inter, 0.0)
+        if config.person_weighted and state.person_queues:
+            q_i = state.person_queues.get(inter, state.queues.get(inter, 0.0))
+        else:
+            q_i = state.queues.get(inter, 0.0)
+
         for dur in DURATIONS:
             k = get_variable_index(inter, dur)
             total += B * (q_i / float(dur)) * x_vec[k]
@@ -256,6 +344,42 @@ def evaluate_throughput(
     return float(total)
 
 
+def evaluate_starvation_fairness(
+    x: Sequence[int],
+    traffic_state: Union[TrafficState, Dict[str, Any]],
+    config: TrafficObjectiveConfig = TrafficObjectiveConfig(),
+) -> float:
+    """Direct mathematical evaluation of starvation/fairness penalty term."""
+    state = traffic_state if isinstance(traffic_state, TrafficState) else TrafficState.from_dict(traffic_state)
+    x_vec = np.asarray(x, dtype=np.float64)
+    starv_w = config.starvation_penalty_weight
+    fair_w = config.fairness_weight
+    cap = config.max_wait_cap
+
+    if starv_w <= 0.0 and fair_w <= 0.0:
+        return 0.0
+
+    total_wait = sum(state.approach_waiting_times.values()) if state.approach_waiting_times else 0.0
+    total = 0.0
+
+    for inter in INTERSECTIONS:
+        w_i = state.approach_waiting_times.get(inter, 0.0)
+        starv_excess = max(0.0, w_i - cap)
+
+        for dur in DURATIONS:
+            k = get_variable_index(inter, dur)
+            shortage = 45.0 - float(dur)
+
+            if starv_w > 0.0 and starv_excess > 0.0:
+                total += starv_w * (starv_excess / cap) * shortage * x_vec[k]
+
+            if fair_w > 0.0 and total_wait > 0.0:
+                wait_share = w_i / total_wait
+                total += fair_w * wait_share * shortage * x_vec[k]
+
+    return float(total)
+
+
 def evaluate_local_traffic_qubo_energy(
     x: Sequence[int],
     traffic_state: Union[TrafficState, Dict[str, Any]],
@@ -263,9 +387,20 @@ def evaluate_local_traffic_qubo_energy(
 ) -> float:
     """Direct mathematical evaluation of the net local traffic QUBO energy:
 
-    E_local(x) = H_wait(x) + H_capacity(x) - H_throughput(x)
+    E_local(x) = H_wait(x) + H_capacity(x) - H_throughput(x) + H_starvation_fairness(x)
     """
     w = evaluate_wait(x, traffic_state, config)
     c = evaluate_capacity(x, traffic_state, config)
     t = evaluate_throughput(x, traffic_state, config)
-    return float(w + c - t)
+    sf = evaluate_starvation_fairness(x, traffic_state, config)
+    return float(w + c - t + sf)
+
+
+def build_traffic_qubo(
+    traffic_state: Union[TrafficState, Dict[str, Any]],
+    config: TrafficObjectiveConfig = TrafficObjectiveConfig(),
+) -> QUBOModel:
+    """Build a standalone 12-variable QUBO model containing strictly local traffic terms."""
+    Q = np.zeros((NUM_VARIABLES, NUM_VARIABLES), dtype=float)
+    Q = add_traffic_terms(Q, traffic_state, config)
+    return QUBOModel(Q=Q, offset=0.0, metadata={"type": "local_traffic_only"})

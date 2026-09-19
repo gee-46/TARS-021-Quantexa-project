@@ -36,11 +36,6 @@ from optimization.benchmark_metrics import (
     TrialResult,
     summarize_results,
 )
-from simulation.scenario import (
-    SimulationScenario,
-    create_default_simulation_scenario,
-)
-from simulation.engine import simulate
 
 
 @dataclass(frozen=True)
@@ -69,7 +64,7 @@ class BenchmarkScenario:
     qubo_model: QUBOModel
     exact_optimum_x: Optional[Tuple[int, ...]] = None
     exact_optimum_energy: Optional[float] = None
-    simulation_scenario: Optional[SimulationScenario] = None
+    simulation_scenario: Optional[Any] = None
 
 
 def create_deterministic_scenario(
@@ -126,6 +121,7 @@ def create_deterministic_scenario(
 
     sim_scenario = None
     if with_simulation:
+        from simulation.scenario import create_default_simulation_scenario
         sim_scenario = create_default_simulation_scenario(
             scenario_id=f"sim_{scenario_id}",
             duration_seconds=300,
@@ -202,11 +198,13 @@ def create_random_scenario(
 
     sim_scenario = None
     if with_simulation:
+        from simulation.scenario import create_default_simulation_scenario
         sim_scenario = create_default_simulation_scenario(
             scenario_id=f"sim_{scenario_id}",
             duration_seconds=300,
             with_emergency=with_emergency,
         )
+
 
     return BenchmarkScenario(
         scenario_id=scenario_id,
@@ -284,12 +282,14 @@ def run_benchmark(
                     and output.signal_plan
                     and output.onehot_valid
                 ):
+                    from simulation.engine import simulate
                     sim_metrics = simulate(
                         scenario=scenario.simulation_scenario,
                         signal_plan=output.signal_plan,
                         seed=trial_seed,
                     )
                     traffic_metrics = sim_metrics.to_traffic_metrics()
+
 
                 trial_record = TrialResult(
                     scenario_id=scenario.scenario_id,

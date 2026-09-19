@@ -260,3 +260,7 @@ def solve_simulated_annealing(
             optimality_gap=None,
             exact_optimum_energy=exact_optimum_energy,
         )
+
+
+# Backward-compatible alias
+solve_sa = solve_simulated_annealing

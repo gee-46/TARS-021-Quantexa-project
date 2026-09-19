@@ -135,22 +135,35 @@ class AdaptiveRollingHorizonController:
         """Check if second t is a scheduled replan boundary."""
         return second > 0 and (second % self.replan_interval == 0)
 
-    def extract_traffic_state(self, current_queues: Dict[str, Union[int, float]]) -> TrafficState:
-        """Construct TrafficState from live simulator queues."""
+    def extract_traffic_state(
+        self,
+        current_queues: Dict[str, Union[int, float]],
+        person_queues: Optional[Dict[str, float]] = None,
+        approach_waiting_times: Optional[Dict[str, float]] = None,
+    ) -> TrafficState:
+        """Construct TrafficState from live simulator queues and optional person queues."""
         queues_clean: Dict[str, float] = {}
         densities_clean: Dict[str, float] = {}
         capacities_clean: Dict[str, float] = {}
+        person_q_clean: Dict[str, float] = {}
+        appr_w_clean: Dict[str, float] = {}
 
         for inter in self.scenario.intersections:
             q = float(current_queues.get(inter, 0.0))
             queues_clean[inter] = q
             densities_clean[inter] = min(0.95, max(0.20, q / 20.0))
             capacities_clean[inter] = self.nominal_capacity
+            if person_queues and inter in person_queues:
+                person_q_clean[inter] = float(person_queues[inter])
+            if approach_waiting_times and inter in approach_waiting_times:
+                appr_w_clean[inter] = float(approach_waiting_times[inter])
 
         return TrafficState(
             queues=queues_clean,
             densities=densities_clean,
             capacities=capacities_clean,
+            person_queues=person_q_clean,
+            approach_waiting_times=appr_w_clean,
         )
 
     def generate_initial_plan(self, initial_queues: Optional[Dict[str, Union[int, float]]] = None) -> Dict[str, int]:
@@ -165,86 +178,115 @@ class AdaptiveRollingHorizonController:
         second: int,
         current_queues: Dict[str, Union[int, float]],
         trigger: str = "scheduled",
+        person_queues: Optional[Dict[str, float]] = None,
+        approach_waiting_times: Optional[Dict[str, float]] = None,
     ) -> Dict[str, int]:
         """Execute rolling-horizon replanning step from observed live queue state."""
         start_time = time.perf_counter()
         replan_idx = len(self.replan_events)
 
-        traffic_state = self.extract_traffic_state(current_queues)
-        edges = [
-            (self.scenario.intersections[i], self.scenario.intersections[i + 1])
-            for i in range(len(self.scenario.intersections) - 1)
-        ]
+        traffic_state = self.extract_traffic_state(
+            current_queues=current_queues,
+            person_queues=person_queues,
+            approach_waiting_times=approach_waiting_times,
+        )
 
         # Build fresh QUBO directly from current observed traffic state
         qubo = build_qubo(
             traffic_state=traffic_state,
-            edges=edges,
-            config=self.qubo_config,
             emergency_constraints=None,
+            config=self.qubo_config,
         )
 
-        # Solve with existing Hybrid QAOA -> SA pipeline
-        hybrid_res: HybridSolveResult = solve_hybrid(
+        solve_seed = self.solver_seed + replan_idx
+
+        # Solve using the authoritative Hybrid QAOA -> SA pipeline
+        result: HybridSolveResult = solve_hybrid(
             qubo_model=qubo,
+            emergency_constraints=None,
             qaoa_p=self.qaoa_p,
-            qaoa_maxiter=self.qaoa_maxiter,
             qaoa_shots=self.qaoa_shots,
-            qaoa_seed=self.solver_seed + replan_idx,
+            qaoa_maxiter=self.qaoa_maxiter,
             sa_num_reads=self.sa_num_reads,
             sa_num_sweeps=self.sa_num_sweeps,
-            sa_seed=self.solver_seed + replan_idx,
-            require_onehot=True,
-            require_emergency_valid=False,
+            seed=solve_seed,
         )
 
-        opt_runtime = time.perf_counter() - start_time
-        self.cumulative_optimization_runtime += opt_runtime
+        elapsed = time.perf_counter() - start_time
+        self.cumulative_optimization_runtime += elapsed
 
-        if hybrid_res.solver_used == "qaoa" and not hybrid_res.fallback_used:
+        if result.solver_used == "qaoa":
             self.qaoa_execution_count += 1
-        elif hybrid_res.fallback_used:
-            self.qaoa_execution_count += 1
+        elif result.solver_used == "sa":
             self.sa_fallback_count += 1
 
-        applied = False
-        if hybrid_res.signal_plan is not None:
-            self.current_plan = dict(hybrid_res.signal_plan)
-            applied = True
-        elif self.current_plan is not None:
-            applied = True
-        else:
-            self.current_plan = {inter: 30 for inter in self.scenario.intersections}
-            applied = True
-
+        # Record structured replanning telemetry
+        chosen_plan = dict(result.signal_plan) if result.signal_plan else {"I1": 30, "I2": 30, "I3": 30, "I4": 30}
         event = ReplanningEvent(
             replan_index=replan_idx,
             simulation_time=second,
             trigger=trigger,
             queue_state=dict(traffic_state.queues),
             density_state=dict(traffic_state.densities),
-            signal_plan=dict(self.current_plan),
-            solver_used=hybrid_res.solver_used,
-            optimization_energy=float(hybrid_res.best_energy),
-            optimization_runtime=float(opt_runtime),
-            fallback_used=bool(hybrid_res.fallback_used),
-            fallback_reason=hybrid_res.fallback_reason,
-            applied=applied,
-            canonical_bitstring=hybrid_res.best_bitstring,
-            qubit_count=qubo.num_variables,
+            signal_plan=chosen_plan,
+            solver_used=result.solver_used,
+            optimization_energy=result.best_energy,
+            optimization_runtime=result.runtime_seconds,
+            fallback_used=result.fallback_used,
+            fallback_reason=result.fallback_reason,
+            applied=True,
+            canonical_bitstring=result.best_bitstring,
+            qubit_count=12,
             qaoa_p=self.qaoa_p,
             qaoa_shots=self.qaoa_shots,
-            onehot_valid=bool(hybrid_res.onehot_valid),
-            emergency_valid=bool(hybrid_res.emergency_valid),
+            onehot_valid=result.onehot_valid,
+            emergency_valid=result.emergency_valid,
         )
         self.replan_events.append(event)
-        return self.current_plan
+        self.current_plan = chosen_plan
+
+        return chosen_plan
+
+
+    def step(
+        self,
+        t: int,
+        current_queues: Dict[str, Union[int, float]],
+        emergency_controller: Optional[Any] = None,
+        person_queues: Optional[Dict[str, float]] = None,
+        approach_waiting_times: Optional[Dict[str, float]] = None,
+    ) -> Dict[str, int]:
+        """Convenience simulation step hook called at each simulation tick.
+
+        Returns newly optimized plan if t is a scheduled replan boundary; otherwise returns current plan.
+        """
+        if self.should_replan(t):
+            new_plan = self.replan(
+                second=t,
+                current_queues=current_queues,
+                trigger="scheduled",
+                person_queues=person_queues,
+                approach_waiting_times=approach_waiting_times,
+            )
+            return new_plan
+        return self.current_plan if self.current_plan is not None else self.generate_initial_plan(current_queues)
 
     @property
     def scheduled_replan_count(self) -> int:
-        """Count of scheduled periodic replans (excluding initial plan at t=0)."""
-        return max(0, len(self.replan_events) - 1)
+        """Count of periodic scheduled replans excluding initial t=0."""
+        return sum(1 for e in self.replan_events if e.trigger == "scheduled")
 
     def events_as_dict(self) -> List[Dict[str, Any]]:
-        """Return all replanning events as list of pure dictionaries."""
-        return [ev.to_dict() for ev in self.replan_events]
+        """Return replanning events as list of JSON-safe dictionaries."""
+        return [e.to_dict() for e in self.replan_events]
+
+    def get_telemetry_summary(self) -> Dict[str, Any]:
+        """Return aggregate telemetry statistics for all rolling-horizon replans."""
+        return {
+            "total_replans": len(self.replan_events),
+            "replan_interval": self.replan_interval,
+            "qaoa_execution_count": self.qaoa_execution_count,
+            "sa_fallback_count": self.sa_fallback_count,
+            "cumulative_optimization_runtime": round(self.cumulative_optimization_runtime, 4),
+            "replan_timeline": [e.to_dict() for e in self.replan_events],
+        }

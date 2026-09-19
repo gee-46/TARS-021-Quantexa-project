@@ -8,6 +8,8 @@ from dataclasses import dataclass, field
 from typing import Dict, Tuple, Optional, Any, Sequence, List
 import numpy as np
 
+from simulation.models import VehicleTypeConfig
+
 
 @dataclass(frozen=True)
 class EmergencyVehicleConfig:
@@ -16,6 +18,7 @@ class EmergencyVehicleConfig:
     vehicle_id: str
     arrival_time: int
     route: Tuple[str, ...] = ("I2", "I3", "I4")
+    priority: int = 1
 
 
 @dataclass(frozen=True)
@@ -31,7 +34,10 @@ class SimulationScenario:
         travel_time_between_intersections: Seconds for vehicle to transit between adjacent intersections (default 2).
         arrival_rates: Vehicles per second arriving at network entry points (e.g. {"I1": 0.35, ...}).
         initial_queues: Number of vehicles already waiting in queue at t=0.
-        emergency_config: Optional scheduled emergency vehicle configuration.
+        emergency_config: Optional primary scheduled emergency vehicle configuration (backward compatible).
+        emergency_vehicles: Sequence of 1 or more scheduled emergency vehicles for multi-emergency simulation.
+        vehicle_type_config: Configurable occupancy for cars, buses, etc.
+        bus_probabilities: Probability of bus arrivals per intersection (e.g. {"I1": 0.1}).
     """
 
     scenario_id: str
@@ -43,6 +49,16 @@ class SimulationScenario:
     arrival_rates: Dict[str, float] = field(default_factory=lambda: {"I1": 0.30, "I2": 0.15, "I3": 0.10})
     initial_queues: Dict[str, int] = field(default_factory=lambda: {"I1": 5, "I2": 8, "I3": 4, "I4": 6})
     emergency_config: Optional[EmergencyVehicleConfig] = None
+    emergency_vehicles: Tuple[EmergencyVehicleConfig, ...] = ()
+    vehicle_type_config: VehicleTypeConfig = field(default_factory=VehicleTypeConfig)
+    bus_probabilities: Dict[str, float] = field(default_factory=dict)
+
+    def get_all_emergency_configs(self) -> Tuple[EmergencyVehicleConfig, ...]:
+        """Return combined tuple of all configured emergency vehicles."""
+        configs = list(self.emergency_vehicles)
+        if self.emergency_config is not None and self.emergency_config not in configs:
+            configs.insert(0, self.emergency_config)
+        return tuple(configs)
 
     def validate_plan(self, signal_plan: Dict[str, int]) -> None:
         """Validate that signal plan covers all network intersections with allowed durations."""
@@ -83,3 +99,95 @@ def create_default_simulation_scenario(
         initial_queues={"I1": 10, "I2": 15, "I3": 8, "I4": 12},
         emergency_config=emergency,
     )
+
+
+def create_canonical_scenarios(duration_seconds: int = 300) -> Dict[str, SimulationScenario]:
+    """Construct the full suite of canonical benchmark evaluation scenarios (A through G).
+
+    Scenarios:
+        - Scenario A: Normal balanced traffic
+        - Scenario B: Heavy congestion
+        - Scenario C: Bus/person-heavy transit corridor
+        - Scenario D: Single emergency vehicle
+        - Scenario E: Two conflicting emergency vehicles (opposing routes at I3)
+        - Scenario F: Three simultaneous emergency vehicles contending for junction
+        - Scenario G: High-demand adaptive rolling horizon traffic
+
+    Returns:
+        Dict[str, SimulationScenario]: Mapped scenario suite keyed by identifier.
+    """
+    scenarios: Dict[str, SimulationScenario] = {}
+
+    # Scenario A: Normal balanced traffic
+    scenarios["scenario_a_balanced"] = SimulationScenario(
+        scenario_id="scenario_a_balanced",
+        duration_seconds=duration_seconds,
+        arrival_rates={"I1": 0.25, "I2": 0.25, "I3": 0.25, "I4": 0.25},
+        initial_queues={"I1": 6, "I2": 6, "I3": 6, "I4": 6},
+    )
+
+    # Scenario B: Heavy congestion
+    scenarios["scenario_b_congested"] = SimulationScenario(
+        scenario_id="scenario_b_congested",
+        duration_seconds=duration_seconds,
+        arrival_rates={"I1": 0.60, "I2": 0.55, "I3": 0.50, "I4": 0.45},
+        initial_queues={"I1": 25, "I2": 30, "I3": 20, "I4": 25},
+    )
+
+    # Scenario C: Bus/person-heavy corridor
+    scenarios["scenario_c_bus_corridor"] = SimulationScenario(
+        scenario_id="scenario_c_bus_corridor",
+        duration_seconds=duration_seconds,
+        arrival_rates={"I1": 0.35, "I2": 0.25, "I3": 0.20, "I4": 0.20},
+        initial_queues={"I1": 8, "I2": 10, "I3": 8, "I4": 10},
+        bus_probabilities={"I1": 0.4, "I2": 0.2},
+        vehicle_type_config=VehicleTypeConfig(bus_occupancy=35.0, car_occupancy=1.5),
+    )
+
+    # Scenario D: Single emergency vehicle
+    scenarios["scenario_d_single_emergency"] = SimulationScenario(
+        scenario_id="scenario_d_single_emergency",
+        duration_seconds=duration_seconds,
+        arrival_rates={"I1": 0.30, "I2": 0.20, "I3": 0.15, "I4": 0.15},
+        initial_queues={"I1": 8, "I2": 10, "I3": 8, "I4": 8},
+        emergency_config=EmergencyVehicleConfig(
+            vehicle_id="AMB_01",
+            arrival_time=20,
+            route=("I1", "I2", "I3", "I4"),
+        ),
+    )
+
+    # Scenario E: Two conflicting emergencies
+    scenarios["scenario_e_two_emergency_conflict"] = SimulationScenario(
+        scenario_id="scenario_e_two_emergency_conflict",
+        duration_seconds=duration_seconds,
+        arrival_rates={"I1": 0.30, "I2": 0.20, "I3": 0.20, "I4": 0.20},
+        initial_queues={"I1": 8, "I2": 12, "I3": 10, "I4": 8},
+        emergency_vehicles=(
+            EmergencyVehicleConfig(vehicle_id="AMB_EAST", arrival_time=15, route=("I1", "I2", "I3"), priority=1),
+            EmergencyVehicleConfig(vehicle_id="AMB_WEST", arrival_time=18, route=("I4", "I3", "I2"), priority=2),
+        ),
+    )
+
+    # Scenario F: Three emergency conflict
+    scenarios["scenario_f_three_emergency_conflict"] = SimulationScenario(
+        scenario_id="scenario_f_three_emergency_conflict",
+        duration_seconds=duration_seconds,
+        arrival_rates={"I1": 0.35, "I2": 0.25, "I3": 0.25, "I4": 0.20},
+        initial_queues={"I1": 10, "I2": 15, "I3": 12, "I4": 10},
+        emergency_vehicles=(
+            EmergencyVehicleConfig(vehicle_id="AMB_1", arrival_time=10, route=("I1", "I2", "I3"), priority=1),
+            EmergencyVehicleConfig(vehicle_id="AMB_2", arrival_time=12, route=("I4", "I3", "I2"), priority=2),
+            EmergencyVehicleConfig(vehicle_id="FIRE_3", arrival_time=15, route=("I2", "I3", "I4"), priority=3),
+        ),
+    )
+
+    # Scenario G: High-demand adaptive traffic
+    scenarios["scenario_g_adaptive_high_demand"] = SimulationScenario(
+        scenario_id="scenario_g_adaptive_high_demand",
+        duration_seconds=duration_seconds,
+        arrival_rates={"I1": 0.45, "I2": 0.40, "I3": 0.35, "I4": 0.30},
+        initial_queues={"I1": 15, "I2": 20, "I3": 12, "I4": 18},
+    )
+
+    return scenarios

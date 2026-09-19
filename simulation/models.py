@@ -1,13 +1,46 @@
 """Simulation Entities and Data Models for Traffic Network.
 
 Provides lightweight structures for:
-1. Vehicle: Individual vehicle tracking (entry, waiting, travel times, route progress, emergency status).
-2. SignalState: Periodic cyclic traffic light phase evaluator for discrete-time steps.
+1. Vehicle: Individual vehicle tracking (entry, waiting, travel times, route progress, vehicle types, passenger occupancy, emergency status).
+2. VehicleTypeConfig: Configurable passenger occupancy for cars, buses, motorcycles, trucks, and emergency vehicles.
+3. SignalState: Periodic cyclic traffic light phase evaluator for discrete-time steps.
 """
 
 from dataclasses import dataclass, field
 from typing import Dict, Tuple, Optional, List, Sequence
 import numpy as np
+
+
+@dataclass(frozen=True)
+class VehicleTypeConfig:
+    """Configurable passenger occupancy mapping for diverse vehicle types.
+
+    Attributes:
+        car_occupancy: Average passenger count for passenger cars.
+        bus_occupancy: Average passenger count for transit buses.
+        motorcycle_occupancy: Average passenger count for motorcycles.
+        truck_occupancy: Average passenger count for freight trucks.
+        emergency_occupancy: Average crew count for emergency response vehicles.
+    """
+
+    car_occupancy: float = 1.5
+    bus_occupancy: float = 30.0
+    motorcycle_occupancy: float = 1.0
+    truck_occupancy: float = 1.0
+    emergency_occupancy: float = 2.0
+
+    def get_occupancy(self, vehicle_type: str) -> float:
+        """Return nominal passenger count for a given vehicle type string."""
+        vt = str(vehicle_type).lower()
+        if "bus" in vt:
+            return self.bus_occupancy
+        elif "moto" in vt:
+            return self.motorcycle_occupancy
+        elif "truck" in vt:
+            return self.truck_occupancy
+        elif "emerg" in vt:
+            return self.emergency_occupancy
+        return self.car_occupancy
 
 
 @dataclass
@@ -26,6 +59,8 @@ class Vehicle:
         is_emergency: True if this is a priority emergency vehicle.
         completed: True if vehicle reached destination and exited the network.
         completion_time: Discrete second when vehicle exited (or None).
+        vehicle_type: Categorical vehicle type ("car", "bus", "motorcycle", "truck", "emergency").
+        passenger_count: Number of human occupants in this vehicle (defaults to 1).
     """
 
     vehicle_id: str
@@ -39,6 +74,13 @@ class Vehicle:
     is_emergency: bool = False
     completed: bool = False
     completion_time: Optional[int] = None
+    vehicle_type: str = "car"
+    passenger_count: int = 1
+
+    @property
+    def person_delay(self) -> float:
+        """Total person-seconds of delay accumulated by all occupants in this vehicle."""
+        return float(self.waiting_time * self.passenger_count)
 
     @property
     def current_intersection(self) -> Optional[str]:

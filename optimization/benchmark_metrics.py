@@ -52,6 +52,13 @@ class TrafficMetrics:
     throughput: Optional[float] = None
     emergency_response_time: Optional[float] = None
     emergency_delay: Optional[float] = None
+    person_delay: Optional[float] = None
+    jain_fairness_index: Optional[float] = None
+    max_approach_wait: Optional[float] = None
+    starvation_violations: Optional[float] = None
+    idle_vehicle_seconds: Optional[float] = None
+    estimated_fuel_liters: Optional[float] = None
+    estimated_co2_kg: Optional[float] = None
 
     def to_dict(self) -> Dict[str, Any]:
         return asdict(self)
@@ -59,6 +66,7 @@ class TrafficMetrics:
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "TrafficMetrics":
         return cls(**data)
+
 
 
 @dataclass(frozen=True)

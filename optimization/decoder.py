@@ -11,7 +11,7 @@ Validation Rules:
 - No Silent Repair: Invalid solutions raise explicit validation exceptions.
 """
 
-from typing import Dict, Sequence, Tuple, Optional
+from typing import Dict, Sequence, Tuple, Optional, Any, Union
 import numpy as np
 
 from optimization.variables import (
@@ -51,13 +51,13 @@ def is_valid_onehot(x: Sequence[int]) -> bool:
 
 def is_valid_emergency(
     x: Sequence[int],
-    emergency_constraints: Optional[EmergencyConstraints],
+    emergency_constraints: Optional[Any],
 ) -> bool:
     """Check if binary state x satisfies active emergency corridor constraints.
 
     Args:
         x: Binary state sequence.
-        emergency_constraints: Active EmergencyConstraints or None.
+        emergency_constraints: Active EmergencyConstraints, route tuple, or dict.
 
     Returns:
         bool: True if emergency_constraints is None or if all route intersections
@@ -70,8 +70,23 @@ def is_valid_emergency(
     if len(x_vec) != NUM_VARIABLES:
         return False
 
-    forced_dur = emergency_constraints.forced_duration
-    for k in emergency_constraints.route:
+    if isinstance(emergency_constraints, dict):
+        for k, forced_dur in emergency_constraints.items():
+            v = get_variable_index(k, int(forced_dur))
+            if x_vec[v] != 1.0:
+                return False
+        return True
+
+    if isinstance(emergency_constraints, (tuple, list)):
+        for k in emergency_constraints:
+            v = get_variable_index(k, 45)
+            if x_vec[v] != 1.0:
+                return False
+        return True
+
+    forced_dur = getattr(emergency_constraints, "forced_duration", 45)
+    route = getattr(emergency_constraints, "route", ())
+    for k in route:
         v = get_variable_index(k, forced_dur)
         if x_vec[v] != 1.0:
             return False

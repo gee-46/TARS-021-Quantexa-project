@@ -171,3 +171,47 @@ def enumerate_qubo_states(
         is_unconstrained_valid=is_unconstrained_valid,
         all_records=records,
     )
+
+
+def calculate_optimality_metrics(
+    solver_energy: float,
+    optimum_energy: float,
+    worst_energy: Optional[float] = None,
+    epsilon: float = 1e-9,
+) -> Dict[str, float]:
+    """Calculate mathematically rigorous optimality gap and normalized approximation metrics.
+
+    Handles negative QUBO energies robustly without division by negative values.
+
+    Definitions:
+        - absolute_gap = solver_energy - optimum_energy
+        - normalized_approximation_ratio = 1.0 - (solver_energy - optimum_energy) / max(worst_energy - optimum_energy, epsilon)
+          Bounded in [0.0, 1.0] where 1.0 = exact optimum, 0.0 = worst state.
+
+    Args:
+        solver_energy: Energy found by heuristic solver (QAOA, SA, Greedy).
+        optimum_energy: Ground truth exact minimum energy from exhaustive enumeration.
+        worst_energy: Optional maximum energy in state space for normalized spectrum scaling.
+        epsilon: Numerical stability tolerance.
+
+    Returns:
+        Dict[str, float]: Calculated metrics dictionary.
+    """
+    abs_gap = max(0.0, float(solver_energy - optimum_energy))
+
+    if worst_energy is not None:
+        span = max(float(worst_energy - optimum_energy), epsilon)
+        normalized_ratio = max(0.0, min(1.0, 1.0 - (abs_gap / span)))
+    else:
+        # Fallback ratio if only optimum is known and strictly positive
+        if optimum_energy > 0:
+            normalized_ratio = float(optimum_energy / max(solver_energy, epsilon))
+        else:
+            normalized_ratio = 1.0 if abs_gap < 1e-6 else 0.0
+
+    return {
+        "exact_optimum_energy": float(optimum_energy),
+        "solver_energy": float(solver_energy),
+        "absolute_optimality_gap": float(abs_gap),
+        "normalized_approximation_ratio": float(normalized_ratio),
+    }
