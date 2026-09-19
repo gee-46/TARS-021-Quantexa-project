@@ -112,6 +112,10 @@ class QuantumFlowRunResult:
     binary_vector: Optional[List[int]] = None
     onehot_valid: bool = True
     emergency_valid: bool = True
+    qubit_count: int = 12
+    qaoa_p: Optional[int] = None
+    qaoa_maxiter: Optional[int] = None
+    qaoa_shots: Optional[int] = None
 
     # Traffic Performance
     simulation_duration: int = 300
@@ -140,6 +144,21 @@ class QuantumFlowRunResult:
     # System State
     final_signal_states: Dict[str, str] = field(default_factory=dict)
     recovery_completed: bool = True
+
+    @property
+    def solver_used(self) -> str:
+        """Alias for optimization_solver."""
+        return self.optimization_solver
+
+    @property
+    def fallback_used(self) -> bool:
+        """Alias for optimization_fallback_used."""
+        return self.optimization_fallback_used
+
+    @property
+    def fallback_reason(self) -> Optional[str]:
+        """Alias for optimization_fallback_reason."""
+        return self.optimization_fallback_reason
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert result object into a pure JSON-serializable Python dictionary without custom encoders."""
@@ -458,7 +477,25 @@ def run_quantumflow_demo(
     else:
         recovery_completed = bool(metrics.emergency_completed)
 
-    # 5. Construct Final Structured Run Result
+    # 5. Extract Dynamic Quantum Telemetry
+    raw_res = getattr(ctrl_output, "raw_result", None)
+    qubit_count = bench_scenario.qubo_model.num_variables if hasattr(bench_scenario, "qubo_model") else NUM_VARIABLES
+    qaoa_p = None
+    qaoa_maxiter = None
+    qaoa_shots = None
+
+    if raw_res is not None and hasattr(raw_res, "qaoa_result") and raw_res.qaoa_result is not None:
+        qaoa_res = raw_res.qaoa_result
+        qubit_count = getattr(qaoa_res, "num_qubits", qubit_count)
+        qaoa_p = getattr(qaoa_res, "p", None)
+        qaoa_maxiter = getattr(qaoa_res, "maxiter", None)
+        qaoa_shots = getattr(qaoa_res, "shots", None)
+    elif hasattr(ctrl, "qaoa_p"):
+        qaoa_p = getattr(ctrl, "qaoa_p", None)
+        qaoa_maxiter = getattr(ctrl, "qaoa_maxiter", None)
+        qaoa_shots = getattr(ctrl, "qaoa_shots", None)
+
+    # 6. Construct Final Structured Run Result
     run_id = f"run_{sim_scenario.scenario_id}_{ctrl.name}_{seed}"
 
     return QuantumFlowRunResult(
@@ -477,6 +514,10 @@ def run_quantumflow_demo(
         binary_vector=[int(b) for b in ctrl_output.binary_vector] if ctrl_output.binary_vector else None,
         onehot_valid=bool(ctrl_output.onehot_valid),
         emergency_valid=bool(ctrl_output.emergency_valid),
+        qubit_count=int(qubit_count),
+        qaoa_p=qaoa_p,
+        qaoa_maxiter=qaoa_maxiter,
+        qaoa_shots=qaoa_shots,
         simulation_duration=int(sim_scenario.duration_seconds),
         throughput=int(metrics.throughput),
         average_waiting_time=float(metrics.average_waiting_time),
