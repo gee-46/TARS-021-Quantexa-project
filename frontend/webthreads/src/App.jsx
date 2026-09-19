@@ -55,12 +55,12 @@ export default function App() {
       {/* Background Visual: LetterGlitch from React Bits */}
       <div className="glitch-background">
         <LetterGlitch
-          glitchColors={['#2b4539', '#61dca3', '#61b3dc']}
-          glitchSpeed={50}
+          glitchColors={['#103525', '#00f0ff', '#38bdf8', '#4edea3']}
+          glitchSpeed={45}
           centerVignette={true}
           outerVignette={false}
           smooth={true}
-          characters="ABCDEFGHIJKLMNOPQRSTUVWXYZ!@#$&*()-_+=/[]{};:<>.,0123456789"
+          characters="0123456789"
         />
       </div>
 

@@ -1,120 +1,88 @@
-"""Traffic network definition using NetworkX.
+"""Authoritative 4-Intersection Arterial Network Graph (I1 -> I2 -> I3 -> I4).
 
-Provides a function `get_traffic_network()` that returns a graph with six
-intersections (I1‑I6) and the connecting roads. Each node and edge stores the
-attributes required for the later visualisation.
+Provides `get_traffic_network()` that constructs a NetworkX graph for the
+canonical 4-intersection linear arterial corridor, strictly matching the
+authoritative QuantumFlow backend specification.
 """
 
+from typing import Dict, Any, Optional
 import networkx as nx
 
+INTERSECTIONS = ("I1", "I2", "I3", "I4")
 
-def get_traffic_network() -> nx.Graph:
-    """Create and return the traffic network graph.
+# Arterial corridor coordinates (spaced evenly along an arterial corridor)
+# Centered in an illustrative urban corridor layout
+NODE_COORDINATES = {
+    "I1": (12.9716, 77.5946),  # Intersection 1 (Entrance West)
+    "I2": (12.9716, 77.6046),  # Intersection 2 (Corridor Junction)
+    "I3": (12.9716, 77.6146),  # Intersection 3 (Corridor Junction)
+    "I4": (12.9716, 77.6246),  # Intersection 4 (Exit East)
+}
+
+
+def get_traffic_network(
+    queues: Optional[Dict[str, float]] = None,
+    signal_plan: Optional[Dict[str, int]] = None,
+    signal_states: Optional[Dict[str, str]] = None,
+) -> nx.Graph:
+    """Create and return the authoritative 4-intersection traffic network graph.
+
+    Parameters
+    ----------
+    queues : dict, optional
+        Observed queue counts per intersection {"I1": 10, ...}.
+    signal_plan : dict, optional
+        Green phase durations {"I1": 45, ...}.
+    signal_states : dict, optional
+        Active signal status {"I1": "GREEN" / "NORMAL", ...}.
 
     Returns
     -------
     nx.Graph
-        Graph with node attributes:
-        - intersection_id, latitude, longitude, traffic_density, queue_length,
-          road_capacity, signal_state, green_duration, red_duration
-        Edge attributes:
-        - road_id, source, destination, capacity, traffic_volume, status
+        4-node arterial graph with authoritative attributes.
     """
     G = nx.Graph()
 
-    # Example coordinates – a simple grid representing the diagram
-    nodes = {
-        "I1": {
-            "intersection_id": "I1",
-            "latitude": 37.7749,
-            "longitude": -122.4194,
-            "traffic_density": 20,
-            "queue_length": 5,
-            "road_capacity": 100,
-            "signal_state": "green",
-            "green_duration": 30,
-            "red_duration": 30,
-        },
-        "I2": {
-            "intersection_id": "I2",
-            "latitude": 37.7749,
-            "longitude": -122.4144,
-            "traffic_density": 40,
-            "queue_length": 10,
-            "road_capacity": 100,
-            "signal_state": "red",
-            "green_duration": 30,
-            "red_duration": 30,
-        },
-        "I3": {
-            "intersection_id": "I3",
-            "latitude": 37.7749,
-            "longitude": -122.4094,
-            "traffic_density": 30,
-            "queue_length": 7,
-            "road_capacity": 100,
-            "signal_state": "green",
-            "green_duration": 30,
-            "red_duration": 30,
-        },
-        "I4": {
-            "intersection_id": "I4",
-            "latitude": 37.7699,
-            "longitude": -122.4194,
-            "traffic_density": 25,
-            "queue_length": 6,
-            "road_capacity": 100,
-            "signal_state": "red",
-            "green_duration": 30,
-            "red_duration": 30,
-        },
-        "I5": {
-            "intersection_id": "I5",
-            "latitude": 37.7699,
-            "longitude": -122.4144,
-            "traffic_density": 35,
-            "queue_length": 8,
-            "road_capacity": 100,
-            "signal_state": "green",
-            "green_duration": 30,
-            "red_duration": 30,
-        },
-        "I6": {
-            "intersection_id": "I6",
-            "latitude": 37.7699,
-            "longitude": -122.4094,
-            "traffic_density": 45,
-            "queue_length": 12,
-            "road_capacity": 100,
-            "signal_state": "red",
-            "green_duration": 30,
-            "red_duration": 30,
-        },
-    }
+    default_queues = {"I1": 10, "I2": 15, "I3": 8, "I4": 12}
+    default_plan = {"I1": 30, "I2": 30, "I3": 30, "I4": 30}
+    default_states = {"I1": "GREEN", "I2": "RED", "I3": "GREEN", "I4": "RED"}
 
-    for nid, attrs in nodes.items():
-        G.add_node(nid, **attrs)
+    active_queues = queues if queues is not None else default_queues
+    active_plan = signal_plan if signal_plan is not None else default_plan
+    active_states = signal_states if signal_states is not None else default_states
 
-    # Roads according to the diagram
-    edges = [
-        ("I1", "I2"),
-        ("I2", "I3"),
-        ("I4", "I5"),
-        ("I5", "I6"),
-        ("I1", "I4"),
-        ("I2", "I5"),
-        ("I3", "I6"),
-    ]
+    for inter in INTERSECTIONS:
+        lat, lng = NODE_COORDINATES[inter]
+        q = float(active_queues.get(inter, 0.0))
+        dur = int(active_plan.get(inter, 30))
+        sig = str(active_states.get(inter, "NORMAL")).upper()
+        # Density ratio based on nominal queue capacity (20 veh)
+        density_pct = min(100, int((q / 20.0) * 100))
 
+        G.add_node(
+            inter,
+            intersection_id=inter,
+            latitude=lat,
+            longitude=lng,
+            traffic_density=density_pct,
+            queue_length=int(q),
+            road_capacity=100,
+            signal_state="green" if ("GREEN" in sig or sig == "NORMAL") else "red",
+            green_duration=dur,
+            red_duration=60 - dur,
+        )
+
+    # Directed arterial connections: I1 -> I2 -> I3 -> I4
+    edges = [("I1", "I2"), ("I2", "I3"), ("I3", "I4")]
     for idx, (src, dst) in enumerate(edges, start=1):
         G.add_edge(
             src,
             dst,
-            road_id=f"R{idx}",
+            road_id=f"Arterial_Seg_{idx}",
             source=src,
             destination=dst,
             capacity=100,
-            traffic_volume=0,
+            traffic_volume=int(active_queues.get(src, 0.0)),
             status="open",
         )
 
