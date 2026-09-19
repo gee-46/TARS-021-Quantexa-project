@@ -61,6 +61,7 @@ class Vehicle:
         completion_time: Discrete second when vehicle exited (or None).
         vehicle_type: Categorical vehicle type ("car", "bus", "motorcycle", "truck", "emergency").
         passenger_count: Number of human occupants in this vehicle (defaults to 1).
+        priority_level: Emergency priority tier (1 = most urgent); ignored for civilian vehicles.
     """
 
     vehicle_id: str
@@ -76,6 +77,7 @@ class Vehicle:
     completion_time: Optional[int] = None
     vehicle_type: str = "car"
     passenger_count: int = 1
+    priority_level: int = 1
 
     @property
     def person_delay(self) -> float:

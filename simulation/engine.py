@@ -33,7 +33,11 @@ class TrafficSimulator:
         prepare_lookahead_seconds: int = 3,
         adaptive_controller: Optional[Any] = None,
         vehicle_type_config: Optional[VehicleTypeConfig] = None,
+        conflict_solver: str = "sa",
+        preemption_duty: float = 1.0,
     ):
+        self.conflict_solver = conflict_solver
+        self.preemption_duty = preemption_duty
         self.scenario = scenario
         self.enable_emergency_corridor = enable_emergency_corridor
         self.prepare_lookahead_seconds = prepare_lookahead_seconds
@@ -80,6 +84,9 @@ class TrafficSimulator:
             network_intersections=self.scenario.intersections,
             prepare_lookahead_seconds=self.prepare_lookahead_seconds,
             enabled=self.enable_emergency_corridor,
+            conflict_solver=self.conflict_solver,
+            preemption_duty=self.preemption_duty,
+            travel_time_between_intersections=self.scenario.travel_time_between_intersections,
         )
         self.last_emergency_controller = emergency_controller
 
@@ -154,6 +161,11 @@ class TrafficSimulator:
         # Approach-level wait tracker across entire simulation
         approach_wait_tracker: Dict[str, List[float]] = {name: [] for name in intersections}
 
+        # Optional cross-street queues (served only while the arterial is red)
+        cross_queues: Dict[str, List[Vehicle]] = {name: [] for name in intersections}
+        cross_all: List[Vehicle] = []
+        cross_counter = 0
+
         # 2. Discrete Time Step Simulation Loop
         for t in range(self.scenario.duration_seconds):
             # 0. Check scheduled adaptive rolling-horizon replanning at cycle boundary (t > 0)
@@ -192,6 +204,7 @@ class TrafficSimulator:
                         is_emergency=True,
                         vehicle_type="emergency",
                         passenger_count=int(round(veh_type_cfg.get_occupancy("emergency"))),
+                        priority_level=e_cfg.priority,
                     )
                     queues[e_cfg.route[0]].append(e_veh)
                     all_vehicles.append(e_veh)
@@ -261,6 +274,30 @@ class TrafficSimulator:
                             arr_t = t + self.scenario.travel_time_between_intersections
                             transit_pipes.append((veh, arr_t, next_inter))
 
+            # E2. Cross-street traffic: arrivals, then service only while the arterial is not green
+            if self.scenario.cross_street_rates:
+                for inter_name in intersections:
+                    rate = self.scenario.cross_street_rates.get(inter_name, 0.0)
+                    if rate > 0:
+                        for _ in range(rng.poisson(lam=rate)):
+                            cross_counter += 1
+                            cv = Vehicle(
+                                vehicle_id=f"CROSS_{cross_counter:05d}",
+                                origin=inter_name,
+                                destination=inter_name,
+                                arrival_time=t,
+                                route=(inter_name,),
+                                passenger_count=max(1, int(round(veh_type_cfg.get_occupancy("car")))),
+                            )
+                            cross_queues[inter_name].append(cv)
+                            cross_all.append(cv)
+                    arterial_green = signal_state.is_green(inter_name, t) or emergency_controller.is_signal_green_forced(inter_name)
+                    if not arterial_green:
+                        for _ in range(min(int(self.scenario.service_rate), len(cross_queues[inter_name]))):
+                            cross_queues[inter_name].pop(0)
+                    for cv in cross_queues[inter_name]:
+                        cv.waiting_time += 1
+
             # F. Update vehicle waiting and travel time metrics
             for inter_name, q_list in queues.items():
                 for v in q_list:
@@ -307,6 +344,20 @@ class TrafficSimulator:
         emissions = calculate_emissions(normal_waiting_time)
 
         primary_emerg = all_emergency_vehs[0] if all_emergency_vehs else None
+        emergency_vehicle_results = [
+            {
+                "vehicle_id": ev.vehicle_id,
+                "priority": ev.priority_level,
+                "route": list(ev.route),
+                "arrival_time": ev.arrival_time,
+                "completed": ev.completed,
+                "response_time": float(ev.completion_time - ev.arrival_time) if ev.completed and ev.completion_time is not None else None,
+                "waiting_time": float(ev.waiting_time),
+            }
+            for ev in all_emergency_vehs
+        ]
+        cross_person_delay = float(sum(v.waiting_time * v.passenger_count for v in cross_all))
+
         emerg_wait: Optional[float] = None
         emerg_travel: Optional[float] = None
         emerg_resp: Optional[float] = None
@@ -352,6 +403,9 @@ class TrafficSimulator:
             estimated_co2_kg=emissions.estimated_co2_kg,
             active_emergencies_count=len(all_emergency_vehs),
             resolved_emergency_conflicts=emergency_controller.total_conflicts_resolved,
+            emergency_vehicle_results=emergency_vehicle_results,
+            cross_street_person_delay=cross_person_delay,
+            cross_street_vehicles=len(cross_all),
         )
 
 

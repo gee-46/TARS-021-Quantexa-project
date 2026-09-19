@@ -1,0 +1,4 @@
+# Optional: only needed to submit the conflict-QUBO circuit to real IBM quantum hardware.
+# Credentials: set IBM_QUANTUM_TOKEN or run QiskitRuntimeService.save_account(...) once.
+-r requirements.txt
+qiskit-ibm-runtime>=0.40

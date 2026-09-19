@@ -38,6 +38,9 @@ class SimulationScenario:
         emergency_vehicles: Sequence of 1 or more scheduled emergency vehicles for multi-emergency simulation.
         vehicle_type_config: Configurable occupancy for cars, buses, etc.
         bus_probabilities: Probability of bus arrivals per intersection (e.g. {"I1": 0.1}).
+        cross_street_rates: Optional cross-street arrivals per second per intersection. Cross traffic is only
+            served while the main arterial is NOT green, so preempting the arterial for an ambulance costs
+            cross-street civilians real delay. Empty (default) disables cross traffic.
     """
 
     scenario_id: str
@@ -52,6 +55,7 @@ class SimulationScenario:
     emergency_vehicles: Tuple[EmergencyVehicleConfig, ...] = ()
     vehicle_type_config: VehicleTypeConfig = field(default_factory=VehicleTypeConfig)
     bus_probabilities: Dict[str, float] = field(default_factory=dict)
+    cross_street_rates: Dict[str, float] = field(default_factory=dict)
 
     def get_all_emergency_configs(self) -> Tuple[EmergencyVehicleConfig, ...]:
         """Return combined tuple of all configured emergency vehicles."""

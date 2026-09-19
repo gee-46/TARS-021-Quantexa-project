@@ -156,6 +156,23 @@ class QuantumFlowRunResult:
     emergency_preemption_count: int = 0
     corridor_event_log: List[Dict[str, Any]] = field(default_factory=list)
 
+    # People-aware, fairness and environment telemetry
+    total_person_delay: float = 0.0
+    average_person_delay: float = 0.0
+    total_passengers_served: int = 0
+    jain_fairness_index: float = 1.0
+    max_approach_wait: float = 0.0
+    starvation_violations: int = 0
+    idle_vehicle_seconds: float = 0.0
+    estimated_fuel_liters: float = 0.0
+    estimated_co2_kg: float = 0.0
+    cross_street_person_delay: float = 0.0
+
+    # Multi-emergency telemetry
+    active_emergencies_count: int = 0
+    resolved_emergency_conflicts: int = 0
+    emergency_vehicle_results: List[Dict[str, Any]] = field(default_factory=list)
+
     # System State
     final_signal_states: Dict[str, str] = field(default_factory=dict)
     recovery_completed: bool = True
@@ -574,7 +591,7 @@ def run_quantumflow_demo(
     else:
         final_signal_states = {inter: "NORMAL" for inter in sim_scenario.intersections}
 
-    emergency_present = sim_scenario.emergency_config is not None
+    emergency_present = len(sim_scenario.get_all_emergency_configs()) > 0
 
     if not emergency_present:
         recovery_completed = True
@@ -634,6 +651,19 @@ def run_quantumflow_demo(
         emergency_intersections_cleared=int(metrics.emergency_intersections_cleared),
         emergency_preemption_count=int(metrics.emergency_preemption_count),
         corridor_event_log=metrics.corridor_event_log,
+        total_person_delay=float(metrics.total_person_delay),
+        average_person_delay=float(metrics.average_person_delay),
+        total_passengers_served=int(metrics.total_passengers_served),
+        jain_fairness_index=float(metrics.jain_fairness_index),
+        max_approach_wait=float(metrics.max_approach_wait),
+        starvation_violations=int(metrics.starvation_violations),
+        idle_vehicle_seconds=float(metrics.idle_vehicle_seconds),
+        estimated_fuel_liters=float(metrics.estimated_fuel_liters),
+        estimated_co2_kg=float(metrics.estimated_co2_kg),
+        cross_street_person_delay=float(metrics.cross_street_person_delay),
+        active_emergencies_count=int(metrics.active_emergencies_count),
+        resolved_emergency_conflicts=int(metrics.resolved_emergency_conflicts),
+        emergency_vehicle_results=list(metrics.emergency_vehicle_results),
         final_signal_states=final_signal_states,
         recovery_completed=recovery_completed,
     )

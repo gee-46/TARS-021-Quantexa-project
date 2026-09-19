@@ -51,6 +51,9 @@ class SimulationMetrics:
     estimated_co2_kg: float = 0.0
     active_emergencies_count: int = 0
     resolved_emergency_conflicts: int = 0
+    emergency_vehicle_results: List[Dict[str, Any]] = field(default_factory=list)
+    cross_street_person_delay: float = 0.0
+    cross_street_vehicles: int = 0
 
     def to_dict(self) -> Dict[str, Any]:
         return asdict(self)

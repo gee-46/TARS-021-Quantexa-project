@@ -480,9 +480,16 @@ Developed as part of the Quantexa Hackathon by the TARS-021 engineering team.
 ```bash
 streamlit run streamlit_app.py
 ```
+After the loader, the dashboard has tabs for adaptive control, people & fairness, multi-ambulance conflicts (QAOA vs SA vs Greedy), the solver arbiter, the Pareto slider, a simulator-vs-IBM-hardware comparison (hardware is opt-in) and a schematic Belagavi digital twin.
 
 ### React / Vite Application
 ```bash
 npm install
 npm run dev
 ```
+
+---
+
+## 20. Upgrade Status
+
+See [docs/upgrade_status.md](docs/upgrade_status.md) for the eight upgrades (adaptive control, person-weighted objective, fairness, multi-ambulance conflict QUBO, solver arbiter, Pareto slider, IBM hardware path, Belagavi twin), the defects fixed along the way, what the results do and do not show, and known limitations. The Belagavi twin is a labelled simulation abstraction, and the IBM-hardware branch has not been run on a real device in this repository.

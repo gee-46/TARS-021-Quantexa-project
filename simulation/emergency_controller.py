@@ -34,10 +34,19 @@ class EmergencyCorridorController:
         network_intersections: Tuple[str, ...] = ("I1", "I2", "I3", "I4"),
         prepare_lookahead_seconds: int = 3,
         enabled: bool = True,
+        conflict_solver: str = "sa",
+        preemption_duty: float = 1.0,
+        travel_time_between_intersections: int = 2,
     ):
         self.network_intersections = network_intersections
         self.prepare_lookahead_seconds = prepare_lookahead_seconds
         self.enabled = enabled
+        self.conflict_solver = conflict_solver
+        # Fraction of each 10s window in which a preempted intersection is actually forced green.
+        # 1.0 = full preemption; smaller values leak green time back to cross traffic.
+        self.preemption_duty = float(min(1.0, max(0.0, preemption_duty)))
+        self.travel_time_between_intersections = travel_time_between_intersections
+        self._current_second: int = 0
 
         # Active state tracking
         self.is_active: bool = False
@@ -80,10 +89,15 @@ class EmergencyCorridorController:
                 )
 
         indices = [self.network_intersections.index(inter) for inter in route]
+        if len(indices) < 2:
+            return
+        # Routes run along the arterial in one direction; either direction is allowed so that
+        # opposing ambulances (e.g. I1->I3 and I4->I2) can contend for shared junctions.
+        step = 1 if indices[1] > indices[0] else -1
         for k in range(len(indices) - 1):
-            if indices[k + 1] <= indices[k]:
+            if (indices[k + 1] - indices[k]) * step <= 0:
                 raise ValueError(
-                    f"Non-forward corridor route transition: {route[k]} -> {route[k+1]}."
+                    f"Non-monotone corridor route transition: {route[k]} -> {route[k+1]}."
                 )
 
     def _log_event(
@@ -113,6 +127,7 @@ class EmergencyCorridorController:
         transit_pipes: Sequence[Tuple[Vehicle, int, str]] = (),
     ) -> Dict[str, IntersectionSignalMode]:
         """Update second-by-second signal modes based on emergency vehicle positions."""
+        self._current_second = second
         if not self.enabled:
             return {name: IntersectionSignalMode.NORMAL for name in self.network_intersections}
 
@@ -220,7 +235,7 @@ class EmergencyCorridorController:
                     current_intersection=v.current_intersection or v.origin,
                     distance_to_conflict=len(v.route) - v.current_step,
                     estimated_arrival_at_conflict=second + (len(v.route) - v.current_step) * 2,
-                    priority_level=1,
+                    priority_level=v.priority_level,
                 )
                 for v in uncompleted_vehs
             ]
@@ -228,7 +243,24 @@ class EmergencyCorridorController:
             for c_inter, c_reqs in conflicts.items():
                 if c_inter not in self.active_conflict_schedules:
                     self.total_conflicts_detected += 1
-                    sched = solve_emergency_conflict(c_reqs, c_inter, current_time=second)
+                    by_id = {v.vehicle_id: v for v in uncompleted_vehs}
+                    timed_reqs = []
+                    for r in c_reqs:
+                        rv = by_id[r.vehicle_id]
+                        dist = max(0, r.route.index(c_inter) - rv.current_step)
+                        timed_reqs.append(
+                            EmergencyConflictRequest(
+                                vehicle_id=r.vehicle_id,
+                                route=r.route,
+                                current_intersection=r.current_intersection,
+                                distance_to_conflict=dist,
+                                estimated_arrival_at_conflict=second + dist * (self.travel_time_between_intersections + 1),
+                                priority_level=r.priority_level,
+                            )
+                        )
+                    sched = solve_emergency_conflict(
+                        timed_reqs, c_inter, current_time=second, solver=self.conflict_solver
+                    )
                     self.active_conflict_schedules[c_inter] = sched
                     self.total_conflicts_resolved += 1
                     self._log_event(
@@ -268,7 +300,10 @@ class EmergencyCorridorController:
                     )
 
                 time_to_arrival = arr_time - second
-                if time_to_arrival <= self.prepare_lookahead_seconds:
+                if self._is_held(veh, next_inter, uncompleted_vehs, transit_pipes):
+                    if new_modes[next_inter] == IntersectionSignalMode.NORMAL:
+                        new_modes[next_inter] = IntersectionSignalMode.PREPARE
+                elif time_to_arrival <= self.prepare_lookahead_seconds:
                     new_modes[next_inter] = IntersectionSignalMode.PREEMPT_ACTIVE
                     if next_inter not in self._logged_preemptions:
                         self._logged_preemptions.add(next_inter)
@@ -294,7 +329,11 @@ class EmergencyCorridorController:
             else:
                 # Vehicle is queued at an intersection
                 curr_inter = veh.current_intersection
-                if curr_inter:
+                if curr_inter and self._is_held(veh, curr_inter, uncompleted_vehs, transit_pipes):
+                    # A higher-sequenced ambulance owns this junction first; wait for its slot.
+                    if new_modes[curr_inter] == IntersectionSignalMode.NORMAL:
+                        new_modes[curr_inter] = IntersectionSignalMode.PREPARE
+                elif curr_inter:
                     new_modes[curr_inter] = IntersectionSignalMode.PREEMPT_ACTIVE
                     if curr_inter not in self._logged_preemptions:
                         self._logged_preemptions.add(curr_inter)
@@ -316,11 +355,61 @@ class EmergencyCorridorController:
         self.intersection_modes = new_modes
         return self.intersection_modes
 
+    @staticmethod
+    def _in_transit(veh: Vehicle, transit_pipes: Sequence[Tuple[Vehicle, int, str]]) -> bool:
+        return any(t[0].vehicle_id == veh.vehicle_id for t in transit_pipes)
+
+    def _has_passed(self, veh: Vehicle, inter: str, transit_pipes: Sequence[Tuple[Vehicle, int, str]]) -> bool:
+        """True once veh has been served at ``inter`` (or will never visit it)."""
+        if veh.completed or inter not in veh.route:
+            return True
+        idx = veh.route.index(inter)
+        if veh.current_step > idx:
+            return True
+        return veh.current_step == idx and self._in_transit(veh, transit_pipes)
+
+    def _is_imminent(self, veh: Vehicle, inter: str, transit_pipes: Sequence[Tuple[Vehicle, int, str]]) -> bool:
+        """True if veh is queued at ``inter`` or in transit directly into it."""
+        if inter not in veh.route or veh.completed:
+            return False
+        idx = veh.route.index(inter)
+        if veh.current_step == idx and not self._in_transit(veh, transit_pipes):
+            return True
+        return veh.current_step == idx - 1 and self._in_transit(veh, transit_pipes)
+
+    def _is_held(
+        self,
+        veh: Vehicle,
+        inter: str,
+        uncompleted_vehs: Sequence[Vehicle],
+        transit_pipes: Sequence[Tuple[Vehicle, int, str]],
+    ) -> bool:
+        """True if the conflict schedule sequences an earlier, still-imminent ambulance ahead of veh at ``inter``.
+
+        Only *imminent* predecessors (queued at or in transit into the junction) can hold a vehicle,
+        so a far-away ambulance never idles a junction and starvation is impossible.
+        """
+        sched = self.active_conflict_schedules.get(inter)
+        if sched is None or veh.vehicle_id not in sched.sequenced_vehicles:
+            return False
+        by_id = {v.vehicle_id: v for v in uncompleted_vehs}
+        for vid in sched.sequenced_vehicles[: sched.sequenced_vehicles.index(veh.vehicle_id)]:
+            other = by_id.get(vid)
+            if other is None or self._has_passed(other, inter, transit_pipes):
+                continue
+            if self._is_imminent(other, inter, transit_pipes):
+                return True
+        return False
+
     def is_signal_green_forced(self, intersection: str) -> bool:
         """Return True if intersection signal is currently forced green by active emergency preemption."""
         if not self.enabled or not self.is_active:
             return False
-        return self.intersection_modes.get(intersection) == IntersectionSignalMode.PREEMPT_ACTIVE
+        if self.intersection_modes.get(intersection) != IntersectionSignalMode.PREEMPT_ACTIVE:
+            return False
+        if self.preemption_duty >= 1.0:
+            return True
+        return (self._current_second % 10) < int(round(self.preemption_duty * 10))
 
     @property
     def preemption_count(self) -> int:

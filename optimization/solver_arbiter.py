@@ -266,3 +266,27 @@ def arbitrate_solvers(
         qaoa_vs_sa_energy_delta=round(qaoa_energy - sa_energy, 6),
         qaoa_vs_greedy_energy_delta=round(qaoa_energy - greedy_energy, 6),
     )
+
+
+def describe_arbiter_outcome(result: ArbiterComparisonResult, tol: float = 1e-6) -> str:
+    """Plain-language verdict computed from the energies only (lower QUBO energy is better).
+
+    Reports honestly when QAOA loses or ties; never assumes QAOA should win.
+    """
+    feasible = {k: r for k, r in result.candidates.items() if r.is_feasible}
+    if not feasible:
+        return "No solver produced a feasible signal plan on this instance."
+    best = min(r.qubo_energy for r in feasible.values())
+    winners = sorted(k for k, r in feasible.items() if abs(r.qubo_energy - best) <= tol)
+    names = {"qaoa": "QAOA", "sa": "Simulated annealing", "greedy": "Greedy"}
+    pretty = [names.get(w, w) for w in winners]
+    if len(winners) == len(feasible):
+        text = f"All feasible solvers tied at energy {best:.2f}; this instance does not separate them."
+    else:
+        text = f"{' and '.join(pretty)} won this instance with energy {best:.2f}."
+    if "qaoa" in feasible and "qaoa" not in winners:
+        gap = feasible["qaoa"].qubo_energy - best
+        text += f" QAOA lost this instance (energy {gap:.2f} above the best)."
+    elif "qaoa" not in feasible:
+        text += " QAOA did not return a feasible plan."
+    return text

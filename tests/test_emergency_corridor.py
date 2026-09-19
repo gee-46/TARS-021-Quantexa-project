@@ -206,9 +206,15 @@ class TestEmergencyCorridor(unittest.TestCase):
         with self.assertRaises(ValueError):
             ctrl.validate_route(("I2", "I99"))
 
-        # Invalid: non-forward (backward)
+        # Opposing-direction routes are valid (multi-ambulance conflicts need them)
+        ctrl.validate_route(("I3", "I2"))
+        ctrl.validate_route(("I4", "I3", "I2"))
+
+        # Invalid: direction reversal / repeated junction
         with self.assertRaises(ValueError):
-            ctrl.validate_route(("I3", "I2"))
+            ctrl.validate_route(("I1", "I3", "I2"))
+        with self.assertRaises(ValueError):
+            ctrl.validate_route(("I2", "I2"))
 
     # TEST 14: Normal traffic waiting impact is measurable
     def test_normal_traffic_waiting_measurable(self):
