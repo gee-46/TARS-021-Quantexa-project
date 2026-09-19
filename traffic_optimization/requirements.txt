@@ -1,0 +1,7 @@
+streamlit
+folium
+plotly
+networkx
+qiskit
+qiskit-aer
+streamlit-folium
