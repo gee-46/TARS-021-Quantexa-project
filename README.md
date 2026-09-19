@@ -450,4 +450,4 @@ The backend validation was established on the following verified environment:
 
 Developed as part of the Quantexa Hackathon by the TARS-021 engineering team.
 - **Repository**: [gee-46/TARS-021-Quantexa-project](https://github.com/gee-46/TARS-021-Quantexa-project)
-- **Branch**: `feature/quantum-qubo` (Quantum & Simulation Backend)
+- **Team**: TARS-021
