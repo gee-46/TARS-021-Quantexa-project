@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import WebThreads from './WebThreads';
 import LetterGlitch from './LetterGlitch';
 import { Streamlit } from './streamlit';
 import './App.css';
@@ -14,7 +13,6 @@ const STAGES = [
 
 export default function App() {
   const [currentStageIdx, setCurrentStageIdx] = useState(0);
-  const [visualMode, setVisualMode] = useState('threads'); // 'threads', 'glitch', 'fusion'
 
   useEffect(() => {
     // Notify Streamlit that component is ready and set frame height
@@ -54,70 +52,16 @@ export default function App() {
 
   return (
     <div className="loader-root">
-      {/* Background Visual Layer: WebThreads */}
-      {(visualMode === 'threads' || visualMode === 'fusion') && (
-        <WebThreads
-          color1="#5227FF"
-          color2="#FF9FFC"
-          color3="#FFFFFF"
-          speed={0.2}
-          threadCount={6}
-          frequency={5}
-          spread={0.18}
-          taper={1}
-          position={0.5}
-          fanMode="center"
-          glow={0.02}
-          falloff={0.6}
-          thickness={1.1}
-          brightness={0.6}
-          opacity={1}
-          mirror={true}
-          shimmer={false}
-          grain={true}
-          grainIntensity={0.05}
-          mouseInteraction={true}
-          mouseStrength={0.3}
+      {/* Background Visual: LetterGlitch from React Bits */}
+      <div className="glitch-background">
+        <LetterGlitch
+          glitchColors={['#2b4539', '#61dca3', '#61b3dc']}
+          glitchSpeed={50}
+          centerVignette={true}
+          outerVignette={false}
+          smooth={true}
+          characters="ABCDEFGHIJKLMNOPQRSTUVWXYZ!@#$&*()-_+=/[]{};:<>.,0123456789"
         />
-      )}
-
-      {/* Background Visual Layer: LetterGlitch from React Bits */}
-      {(visualMode === 'glitch' || visualMode === 'fusion') && (
-        <div className={`glitch-layer ${visualMode === 'fusion' ? 'fusion-mode' : 'pure-mode'}`}>
-          <LetterGlitch
-            glitchColors={['#2b4539', '#61dca3', '#61b3dc']}
-            glitchSpeed={50}
-            centerVignette={true}
-            outerVignette={false}
-            smooth={true}
-            characters="01QUBOQAOAISINGSIMULATION"
-          />
-        </div>
-      )}
-
-      {/* Visual Mode Selector in Corner */}
-      <div className="visual-mode-toggle">
-        <button
-          className={visualMode === 'threads' ? 'active' : ''}
-          onClick={() => setVisualMode('threads')}
-          title="WebThreads WebGL2"
-        >
-          Threads
-        </button>
-        <button
-          className={visualMode === 'glitch' ? 'active' : ''}
-          onClick={() => setVisualMode('glitch')}
-          title="LetterGlitch Matrix"
-        >
-          Glitch
-        </button>
-        <button
-          className={visualMode === 'fusion' ? 'active' : ''}
-          onClick={() => setVisualMode('fusion')}
-          title="Hybrid Fusion"
-        >
-          Fusion
-        </button>
       </div>
 
       {/* Futuristic Center Overlay */}
