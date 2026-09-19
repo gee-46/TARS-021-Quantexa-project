@@ -5,3 +5,4 @@ dimod==0.12.22
 numpy==2.2.6
 scipy==1.17.1
 pytest==9.1.1
+streamlit==1.64.0

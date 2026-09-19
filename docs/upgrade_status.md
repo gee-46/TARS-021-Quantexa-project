@@ -13,8 +13,8 @@ Everything below is reproducible with `python -m pytest tests -q` and `streamlit
 | 4 | Multiple ambulances resolved by a conflict QUBO | Done, **defects fixed** (see below) | `optimization/emergency_conflict.py`, `simulation/emergency_controller.py` |
 | 5 | Solver arbiter: QAOA vs SA vs Greedy | Done; also for the conflict QUBO | `optimization/solver_arbiter.py`, `arbitrate_conflict` |
 | 6 | Pareto slider (ambulance vs civilians) | Done, **redesigned to be a real trade-off** | `optimization/pareto.py`, dashboard tab |
-| 7 | IBM hardware | Code path done; **not run on real hardware here** | `optimization/ibm_hardware.py` |
-| 8 | Belagavi digital twin | Schematic abstraction with disclaimer | `simulation/belagavi.py` |
+| 7 | IBM hardware | Ideal-vs-noisy **simulation** verified; real-hardware path implemented but **unverified** (never run on a device) | `optimization/ibm_hardware.py` |
+| 8 | Belagavi-inspired schematic | Illustrative topology with disclaimer; **not** a digital twin | `simulation/belagavi.py` |
 | - | Dashboard for all of the above | Done | `dashboard.py`, `streamlit_app.py` |
 
 ## Defects found and fixed while auditing the upgrade branch
@@ -46,11 +46,16 @@ print(compare_simulator_vs_hardware(reqs, shots=1024, use_hardware=True).to_dict
 PY
 ```
 
-Nothing contacts IBM unless `use_hardware=True` (the dashboard requires an explicit checkbox). The hardware branch follows the documented `qiskit-ibm-runtime` `SamplerV2` API but **has not been executed against a real backend in this repository** - treat the first run as a check of the integration.
+Status: **implemented, documented, unverified.** Nothing contacts IBM unless `use_hardware=True` (the dashboard requires an explicit checkbox). The hardware branch follows the documented `qiskit-ibm-runtime` `SamplerV2` API but **has not been executed against a real backend in this repository** - treat the first run as a check of the integration.
 
 ## Known limitations
 
 * Preemption forces an *entire junction* green for the arterial; there are no per-phase turn movements.
 * The conflict sequencing uses a packed-slot wait model (slots are contiguous from the earliest arrival); it is a sequencing heuristic, not a full signal-timing optimiser.
-* The Belagavi twin is a labelled schematic: junction names are illustrative, demand is assumed, coordinates are deliberately left empty, and no calibration or validation against real traffic has been done.
+* The Belagavi content is a Belagavi-inspired schematic / illustrative topology, not a digital twin: junction names are illustrative, demand is assumed, coordinates are deliberately left empty, and no calibration or validation against real traffic has been done.
+* Traffic volumes everywhere are simulated/assumed; none are backed by measured data.
+* Turn phases are not modelled.
+* Pareto results depend on the configured cross-street traffic assumption.
+* QAOA is executed through classical simulation (Qiskit Aer); no real-hardware run has been performed.
+* No quantum advantage is claimed.
 * Single-seed simulation comparisons are indicative; use `optimization/benchmark.py` for multi-seed statistics.

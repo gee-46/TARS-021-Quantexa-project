@@ -12,7 +12,7 @@
     },
     "optimization_metrics": {
       "status": "success",
-      "runtime_seconds": 5.6600081734359264e-05,
+      "runtime_seconds": 0.00025599999935366213,
       "qubo_energy": 107.55555555555554,
       "best_bitstring": "010010010010",
       "fallback_used": false,
@@ -32,7 +32,14 @@
       "average_queue": 56.24,
       "throughput": 150.0,
       "emergency_response_time": 70.0,
-      "emergency_delay": 66.0
+      "emergency_delay": 66.0,
+      "person_delay": 33612.0,
+      "jain_fairness_index": 0.7799197388336883,
+      "max_approach_wait": 143,
+      "starvation_violations": 36.0,
+      "idle_vehicle_seconds": 16806.0,
+      "estimated_fuel_liters": 3.2678,
+      "estimated_co2_kg": 7.5486
     }
   },
   {
@@ -48,7 +55,7 @@
     },
     "optimization_metrics": {
       "status": "success",
-      "runtime_seconds": 9.940005838871002e-05,
+      "runtime_seconds": 0.0001359999987471383,
       "qubo_energy": 107.55555555555554,
       "best_bitstring": "010010010010",
       "fallback_used": false,
@@ -68,7 +75,14 @@
       "average_queue": 51.42666666666667,
       "throughput": 150.0,
       "emergency_response_time": 68.0,
-      "emergency_delay": 64.0
+      "emergency_delay": 64.0,
+      "person_delay": 30728.0,
+      "jain_fairness_index": 0.7493003984576162,
+      "max_approach_wait": 141,
+      "starvation_violations": 25.0,
+      "idle_vehicle_seconds": 15364.0,
+      "estimated_fuel_liters": 2.9874,
+      "estimated_co2_kg": 6.9009
     }
   },
   {
@@ -84,7 +98,7 @@
     },
     "optimization_metrics": {
       "status": "success",
-      "runtime_seconds": 8.929998148232698e-05,
+      "runtime_seconds": 9.080000018002465e-05,
       "qubo_energy": 107.55555555555554,
       "best_bitstring": "010010010010",
       "fallback_used": false,
@@ -104,7 +118,14 @@
       "average_queue": 67.56666666666666,
       "throughput": 150.0,
       "emergency_response_time": 105.0,
-      "emergency_delay": 101.0
+      "emergency_delay": 101.0,
+      "person_delay": 40338.0,
+      "jain_fairness_index": 0.79168631594793,
+      "max_approach_wait": 164,
+      "starvation_violations": 155.0,
+      "idle_vehicle_seconds": 20169.0,
+      "estimated_fuel_liters": 3.9217,
+      "estimated_co2_kg": 9.0591
     }
   },
   {
@@ -120,7 +141,7 @@
     },
     "optimization_metrics": {
       "status": "success",
-      "runtime_seconds": 0.00013219995889812708,
+      "runtime_seconds": 0.00012910000077681616,
       "qubo_energy": -44.52777777777783,
       "best_bitstring": "010001010001",
       "fallback_used": false,
@@ -140,7 +161,14 @@
       "average_queue": 46.28,
       "throughput": 162.0,
       "emergency_response_time": 60.0,
-      "emergency_delay": 56.0
+      "emergency_delay": 56.0,
+      "person_delay": 27656.0,
+      "jain_fairness_index": 0.6033152854538784,
+      "max_approach_wait": 126,
+      "starvation_violations": 6.0,
+      "idle_vehicle_seconds": 13828.0,
+      "estimated_fuel_liters": 2.6888,
+      "estimated_co2_kg": 6.2111
     }
   },
   {
@@ -156,7 +184,7 @@
     },
     "optimization_metrics": {
       "status": "success",
-      "runtime_seconds": 8.939998224377632e-05,
+      "runtime_seconds": 0.0001053000014508143,
       "qubo_energy": -44.52777777777783,
       "best_bitstring": "010001010001",
       "fallback_used": false,
@@ -176,7 +204,14 @@
       "average_queue": 41.6,
       "throughput": 162.0,
       "emergency_response_time": 58.0,
-      "emergency_delay": 54.0
+      "emergency_delay": 54.0,
+      "person_delay": 24852.0,
+      "jain_fairness_index": 0.5875490750633657,
+      "max_approach_wait": 119,
+      "starvation_violations": 0.0,
+      "idle_vehicle_seconds": 12426.0,
+      "estimated_fuel_liters": 2.4162,
+      "estimated_co2_kg": 5.5814
     }
   },
   {
@@ -192,7 +227,7 @@
     },
     "optimization_metrics": {
       "status": "success",
-      "runtime_seconds": 8.770008571445942e-05,
+      "runtime_seconds": 0.0001384999995934777,
       "qubo_energy": -44.52777777777783,
       "best_bitstring": "010001010001",
       "fallback_used": false,
@@ -212,7 +247,14 @@
       "average_queue": 57.586666666666666,
       "throughput": 162.0,
       "emergency_response_time": 62.0,
-      "emergency_delay": 58.0
+      "emergency_delay": 58.0,
+      "person_delay": 34436.0,
+      "jain_fairness_index": 0.5611784679732846,
+      "max_approach_wait": 146,
+      "starvation_violations": 26.0,
+      "idle_vehicle_seconds": 17218.0,
+      "estimated_fuel_liters": 3.3479,
+      "estimated_co2_kg": 7.7336
     }
   },
   {
@@ -228,7 +270,7 @@
     },
     "optimization_metrics": {
       "status": "success",
-      "runtime_seconds": 7.840001489967108e-05,
+      "runtime_seconds": 0.00016119999781949446,
       "qubo_energy": -95.11111111111109,
       "best_bitstring": "010001001001",
       "fallback_used": false,
@@ -248,7 +290,14 @@
       "average_queue": 19.863333333333333,
       "throughput": 225.0,
       "emergency_response_time": 55.0,
-      "emergency_delay": 51.0
+      "emergency_delay": 51.0,
+      "person_delay": 11816.0,
+      "jain_fairness_index": 0.8927649265428713,
+      "max_approach_wait": 61,
+      "starvation_violations": 0.0,
+      "idle_vehicle_seconds": 5908.0,
+      "estimated_fuel_liters": 1.1488,
+      "estimated_co2_kg": 2.6537
     }
   },
   {
@@ -264,7 +313,7 @@
     },
     "optimization_metrics": {
       "status": "success",
-      "runtime_seconds": 0.00011200003791600466,
+      "runtime_seconds": 9.74000031419564e-05,
       "qubo_energy": -95.11111111111109,
       "best_bitstring": "010001001001",
       "fallback_used": false,
@@ -284,7 +333,14 @@
       "average_queue": 16.613333333333333,
       "throughput": 212.0,
       "emergency_response_time": 53.0,
-      "emergency_delay": 49.0
+      "emergency_delay": 49.0,
+      "person_delay": 9870.0,
+      "jain_fairness_index": 0.862278489678153,
+      "max_approach_wait": 58,
+      "starvation_violations": 0.0,
+      "idle_vehicle_seconds": 4935.0,
+      "estimated_fuel_liters": 0.9596,
+      "estimated_co2_kg": 2.2167
     }
   },
   {
@@ -300,7 +356,7 @@
     },
     "optimization_metrics": {
       "status": "success",
-      "runtime_seconds": 8.439994417130947e-05,
+      "runtime_seconds": 8.909999814932235e-05,
       "qubo_energy": -95.11111111111109,
       "best_bitstring": "010001001001",
       "fallback_used": false,
@@ -320,7 +376,14 @@
       "average_queue": 31.116666666666667,
       "throughput": 225.0,
       "emergency_response_time": 57.0,
-      "emergency_delay": 53.0
+      "emergency_delay": 53.0,
+      "person_delay": 18564.0,
+      "jain_fairness_index": 0.8076041685156177,
+      "max_approach_wait": 65,
+      "starvation_violations": 0.0,
+      "idle_vehicle_seconds": 9282.0,
+      "estimated_fuel_liters": 1.8048,
+      "estimated_co2_kg": 4.1691
     }
   },
   {
@@ -336,7 +399,7 @@
     },
     "optimization_metrics": {
       "status": "success",
-      "runtime_seconds": 0.012781099998392165,
+      "runtime_seconds": 0.02440299999943818,
       "qubo_energy": -95.55555555555554,
       "best_bitstring": "001001001001",
       "fallback_used": false,
@@ -356,7 +419,14 @@
       "average_queue": 19.843333333333334,
       "throughput": 225.0,
       "emergency_response_time": 55.0,
-      "emergency_delay": 51.0
+      "emergency_delay": 51.0,
+      "person_delay": 11804.0,
+      "jain_fairness_index": 0.7688866295916086,
+      "max_approach_wait": 61,
+      "starvation_violations": 0.0,
+      "idle_vehicle_seconds": 5902.0,
+      "estimated_fuel_liters": 1.1476,
+      "estimated_co2_kg": 2.651
     }
   },
   {
@@ -372,7 +442,7 @@
     },
     "optimization_metrics": {
       "status": "success",
-      "runtime_seconds": 0.012514300062321126,
+      "runtime_seconds": 0.02225710000129766,
       "qubo_energy": -95.55555555555554,
       "best_bitstring": "001001001001",
       "fallback_used": false,
@@ -392,7 +462,14 @@
       "average_queue": 16.416666666666668,
       "throughput": 213.0,
       "emergency_response_time": 53.0,
-      "emergency_delay": 49.0
+      "emergency_delay": 49.0,
+      "person_delay": 9752.0,
+      "jain_fairness_index": 0.7688514180848219,
+      "max_approach_wait": 58,
+      "starvation_violations": 0.0,
+      "idle_vehicle_seconds": 4876.0,
+      "estimated_fuel_liters": 0.9481,
+      "estimated_co2_kg": 2.1901
     }
   },
   {
@@ -408,7 +485,7 @@
     },
     "optimization_metrics": {
       "status": "success",
-      "runtime_seconds": 0.016857200069352984,
+      "runtime_seconds": 0.036296199999924283,
       "qubo_energy": -95.55555555555554,
       "best_bitstring": "001001001001",
       "fallback_used": false,
@@ -428,13 +505,63 @@
       "average_queue": 31.063333333333333,
       "throughput": 225.0,
       "emergency_response_time": 57.0,
-      "emergency_delay": 53.0
+      "emergency_delay": 53.0,
+      "person_delay": 18532.0,
+      "jain_fairness_index": 0.6962957792968023,
+      "max_approach_wait": 64,
+      "starvation_violations": 0.0,
+      "idle_vehicle_seconds": 9266.0,
+      "estimated_fuel_liters": 1.8017,
+      "estimated_co2_kg": 4.1619
     }
   },
   {
     "scenario_id": "phase7_deterministic",
     "trial_index": 0,
     "seed": 84,
+    "controller_name": "Hybrid QuantumFlow",
+    "signal_plan": {
+      "I1": 45,
+      "I2": 45,
+      "I3": 45,
+      "I4": 45
+    },
+    "optimization_metrics": {
+      "status": "success",
+      "runtime_seconds": 3.0228261000011116,
+      "qubo_energy": -95.55555555555554,
+      "best_bitstring": "001001001001",
+      "fallback_used": false,
+      "fallback_reason": null,
+      "solver_used": "qaoa",
+      "onehot_valid": true,
+      "emergency_valid": true,
+      "exact_optimum_energy": -95.55555555555554,
+      "optimality_gap": 0.0,
+      "exact_optimum_found": true
+    },
+    "traffic_metrics": {
+      "available": true,
+      "total_waiting_time": 5953.0,
+      "average_waiting_time": 25.22457627118644,
+      "max_queue": 15.0,
+      "average_queue": 19.843333333333334,
+      "throughput": 225.0,
+      "emergency_response_time": 55.0,
+      "emergency_delay": 51.0,
+      "person_delay": 11804.0,
+      "jain_fairness_index": 0.7688866295916086,
+      "max_approach_wait": 61,
+      "starvation_violations": 0.0,
+      "idle_vehicle_seconds": 5902.0,
+      "estimated_fuel_liters": 1.1476,
+      "estimated_co2_kg": 2.651
+    }
+  },
+  {
+    "scenario_id": "phase7_deterministic",
+    "trial_index": 1,
+    "seed": 1084,
     "controller_name": "Hybrid QuantumFlow",
     "signal_plan": {
       "I1": 15,
@@ -444,7 +571,7 @@
     },
     "optimization_metrics": {
       "status": "success",
-      "runtime_seconds": 1.3340416999999434,
+      "runtime_seconds": 4.665105400003085,
       "qubo_energy": -88.77777777777783,
       "best_bitstring": "100001001001",
       "fallback_used": false,
@@ -458,49 +585,20 @@
     },
     "traffic_metrics": {
       "available": true,
-      "total_waiting_time": 8246.0,
-      "average_waiting_time": 34.940677966101696,
-      "max_queue": 36.0,
-      "average_queue": 27.486666666666668,
-      "throughput": 199.0,
-      "emergency_response_time": 55.0,
-      "emergency_delay": 51.0
-    }
-  },
-  {
-    "scenario_id": "phase7_deterministic",
-    "trial_index": 1,
-    "seed": 1084,
-    "controller_name": "Hybrid QuantumFlow",
-    "signal_plan": {
-      "I1": 45,
-      "I2": 45,
-      "I3": 45,
-      "I4": 45
-    },
-    "optimization_metrics": {
-      "status": "success",
-      "runtime_seconds": 0.9738283000187948,
-      "qubo_energy": -95.55555555555554,
-      "best_bitstring": "001001001001",
-      "fallback_used": true,
-      "fallback_reason": "invalid_emergency",
-      "solver_used": "sa",
-      "onehot_valid": true,
-      "emergency_valid": true,
-      "exact_optimum_energy": -95.55555555555554,
-      "optimality_gap": 0.0,
-      "exact_optimum_found": true
-    },
-    "traffic_metrics": {
-      "available": true,
-      "total_waiting_time": 4925.0,
-      "average_waiting_time": 21.600877192982455,
-      "max_queue": 15.0,
-      "average_queue": 16.416666666666668,
-      "throughput": 213.0,
+      "total_waiting_time": 7716.0,
+      "average_waiting_time": 33.8421052631579,
+      "max_queue": 34.0,
+      "average_queue": 25.72,
+      "throughput": 189.0,
       "emergency_response_time": 53.0,
-      "emergency_delay": 49.0
+      "emergency_delay": 49.0,
+      "person_delay": 15334.0,
+      "jain_fairness_index": 0.924652238875392,
+      "max_approach_wait": 121,
+      "starvation_violations": 1.0,
+      "idle_vehicle_seconds": 7667.0,
+      "estimated_fuel_liters": 1.4908,
+      "estimated_co2_kg": 3.4437
     }
   },
   {
@@ -516,12 +614,12 @@
     },
     "optimization_metrics": {
       "status": "success",
-      "runtime_seconds": 1.4189158000517637,
+      "runtime_seconds": 6.580736399999296,
       "qubo_energy": -95.55555555555554,
       "best_bitstring": "001001001001",
-      "fallback_used": true,
-      "fallback_reason": "invalid_onehot",
-      "solver_used": "sa",
+      "fallback_used": false,
+      "fallback_reason": null,
+      "solver_used": "qaoa",
       "onehot_valid": true,
       "emergency_valid": true,
       "exact_optimum_energy": -95.55555555555554,
@@ -536,7 +634,14 @@
       "average_queue": 31.063333333333333,
       "throughput": 225.0,
       "emergency_response_time": 57.0,
-      "emergency_delay": 53.0
+      "emergency_delay": 53.0,
+      "person_delay": 18532.0,
+      "jain_fairness_index": 0.6962957792968023,
+      "max_approach_wait": 64,
+      "starvation_violations": 0.0,
+      "idle_vehicle_seconds": 9266.0,
+      "estimated_fuel_liters": 1.8017,
+      "estimated_co2_kg": 4.1619
     }
   }
 ]

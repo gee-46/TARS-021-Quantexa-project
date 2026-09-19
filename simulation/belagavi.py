@@ -1,4 +1,4 @@
-"""Belagavi digital-twin *abstraction* of the QuantumFlow arterial.
+"""Belagavi-inspired schematic / illustrative topology for the QuantumFlow arterial (NOT a digital twin).
 
 IMPORTANT - what this is and is not
 -----------------------------------
@@ -11,7 +11,7 @@ This maps the four abstract simulator nodes (I1..I4) onto recognisable Belagavi 
 * Nothing here validates the simulator against real traffic, and no result should be
   presented as a prediction for the real city.
 
-To calibrate the twin, replace ``BELAGAVI_JUNCTIONS`` (and fill ``lat``/``lon``) with surveyed
+To turn this into a calibrated model, replace ``BELAGAVI_JUNCTIONS`` (and fill ``lat``/``lon``) with surveyed
 data and replace the demand numbers in ``belagavi_scenario`` with counted flows.
 """
 
@@ -22,8 +22,8 @@ from simulation.models import VehicleTypeConfig
 from simulation.scenario import EmergencyVehicleConfig, SimulationScenario
 
 DISCLAIMER = (
-    "Simulation abstraction, not a validated model of Belagavi. Junction names are illustrative labels; "
-    "layout, distances, signal timings and traffic volumes are assumed, not measured."
+    "Belagavi-inspired schematic / illustrative topology - not a digital twin and not a validated model of Belagavi. "
+    "Junction names are illustrative labels; layout, distances, signal timings and traffic volumes are assumed, not measured."
 )
 
 

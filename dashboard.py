@@ -1,10 +1,11 @@
 """QuantumFlow live dashboard (Streamlit).
 
 Tabs: adaptive control, people & fairness, ambulances (conflict QUBO + arbiter), solver arbiter,
-Pareto slider, IBM hardware comparison, Belagavi digital twin.
+Pareto slider, ideal-vs-noisy simulator comparison (real IBM hardware is opt-in and unverified),
+Belagavi-inspired illustrative schematic.
 
 Every number shown is computed from a simulation or solver run in this session; nothing is
-hard-coded. Quantum results come from Qiskit Aer unless the user explicitly opts in to real hardware.
+hard-coded. All QAOA runs use the local Qiskit Aer simulator unless the user explicitly opts in to real hardware.
 """
 
 import dataclasses
@@ -332,8 +333,11 @@ def _tab_pareto(sc: SimulationScenario, seed: int) -> None:
 
 
 def _tab_hardware(sc: SimulationScenario, seed: int, use_names: bool) -> None:
-    st.subheader("Simulator vs real quantum hardware")
-    st.caption("Same conflict-QUBO circuit and QAOA angles, sampled on ideal Aer, a noisy Aer model and (optionally) IBM hardware.")
+    st.subheader("Ideal vs noisy simulation (real hardware: optional, unverified)")
+    st.caption(
+        "Same conflict-QUBO circuit and QAOA angles, sampled on ideal Aer and a generic noisy Aer model. "
+        "Real IBM hardware execution is an optional future validation: the runtime path is implemented but has not been verified against an actual device."
+    )
     contested = _contested_junctions(sc)
     if not contested:
         st.info("Pick a scenario with two conflicting ambulances (E, F or Belagavi two-ambulance).")
@@ -372,11 +376,11 @@ def _tab_hardware(sc: SimulationScenario, seed: int, use_names: bool) -> None:
 
 
 def _tab_twin(sc: SimulationScenario) -> None:
-    st.subheader("Belagavi digital twin (schematic)")
+    st.subheader("Belagavi-inspired schematic / illustrative topology")
     info = belagavi.describe()
     st.warning(info["disclaimer"])
     df = pd.DataFrame(info["junctions"])[["node_id", "name", "role"]]
-    st.dataframe(df.rename(columns={"node_id": "Node", "name": "Junction label", "role": "Role in the story"}), width="stretch", hide_index=True)
+    st.dataframe(df.rename(columns={"node_id": "Node", "name": "Junction label (illustrative)", "role": "Role in the story"}), width="stretch", hide_index=True)
     order = info["corridor_order"]
     pos = pd.DataFrame({"x": range(len(order)), "y": [0] * len(order), "label": [f"{belagavi.junction_name(n)}\n({n})" for n in order]})
     line = alt.Chart(pos).mark_line(color="#888").encode(x=alt.X("x:Q", axis=None), y=alt.Y("y:Q", axis=None))
@@ -389,18 +393,18 @@ def _tab_twin(sc: SimulationScenario) -> None:
 # --------------------------------------------------------------------------- entry
 def render_dashboard() -> None:
     st.title("🚦 QuantumFlow")
-    st.caption("Adaptive, people-aware, fairness-constrained traffic control · QUBO/QAOA vs simulated annealing vs greedy · all quantum runs on a simulator unless stated.")
+    st.caption("Adaptive, people-aware, fairness-constrained traffic control · QUBO/QAOA vs simulated annealing vs greedy · QAOA runs on the local Qiskit Aer simulator; no quantum advantage is claimed.")
 
     scenarios = all_scenarios()
     with st.sidebar:
         st.header("Scenario")
         key = st.selectbox("Scenario", list(scenarios), index=list(scenarios).index("scenario_e_two_emergency_conflict"))
         seed = st.number_input("Random seed", 0, 10_000, 42)
-        use_names = st.toggle("Show Belagavi junction labels", value=key.startswith("belagavi"))
-        st.caption("Scenarios A–G are canonical benchmarks; Belagavi ones are illustrative abstractions.")
+        use_names = st.toggle("Show Belagavi-inspired junction labels", value=key.startswith("belagavi"))
+        st.caption("Scenarios A–G are canonical benchmarks; Belagavi-inspired ones use assumed, not measured, demand.")
     sc = scenarios[key]
 
-    tabs = st.tabs(["Adaptive", "People & fairness", "Ambulances", "Solver arbiter", "Pareto slider", "Quantum hardware", "Belagavi twin"])
+    tabs = st.tabs(["Adaptive", "People & fairness", "Ambulances", "Solver arbiter", "Pareto slider", "Noise & hardware", "Belagavi schematic"])
     with tabs[0]:
         _tab_adaptive(sc, int(seed), use_names)
     with tabs[1]:

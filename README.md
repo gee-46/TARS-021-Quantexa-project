@@ -267,7 +267,7 @@ python examples/run_quantumflow_demo.py
 ## 13. Installation & Setup
 
 ### Prerequisites
-- Python 3.10 to 3.13
+- Python 3.10 to 3.13 (verified on 3.13.15 with the pinned `requirements.txt`; **Python 3.14 is not supported** - the pinned `numpy==2.2.6` has no working 3.14 build)
 - Git
 
 ### Installation Steps
@@ -288,8 +288,15 @@ source .venv/bin/activate
 
 # 3. Upgrade pip and install dependencies
 python -m pip install --upgrade pip
-pip install -r requirements.txt
+pip install -r requirements.txt      # includes streamlit for the dashboard
+# Optional, only for the unverified real-IBM-hardware path:
+# pip install -r requirements-ibm.txt
+
+# 4. Run the tests (collects tests/ only, see pytest.ini)
+python -m pytest -q
 ```
+
+`traffic_optimization/` is a separate legacy Streamlit map app with its own `traffic_optimization/requirements.txt` (folium, plotly, ...); it is not part of the tested core.
 
 ---
 
@@ -302,6 +309,8 @@ python examples/run_quantumflow_demo.py
 ```
 
 ### Example Console Output
+_Captured from an actual run (Python 3.13.15, pinned requirements, seed 42). The optimisation runtime line varies from run to run; all other values are deterministic for the seed._
+
 ```
 ==================================================
 QUANTUMFLOW END-TO-END DEMO
@@ -322,36 +331,36 @@ NORMAL SIGNAL PLAN:
   I1: 45s green (60s cycle)
   I2: 45s green (60s cycle)
   I3: 45s green (60s cycle)
-  I4: 30s green (60s cycle)
+  I4: 45s green (60s cycle)
 Optimization Solver:     qaoa
 Optimization Status:     success
-Optimization Energy:     -42.5333
-Optimization Runtime:    1.4690s
+Optimization Energy:     -43.0000
+Optimization Runtime:    2.5901s
 Fallback Used:           False
 
 EMERGENCY TELEMETRY:
 Emergency Present:       True
 Emergency Detected:      t=20s
 Corridor Activated:      t=20s
-Emergency Completed:     t=83s
-Emergency Response Time: 63.0s
-Emergency Waiting Time:  59.0s
+Emergency Completed:     t=68s
+Emergency Response Time: 48.0s
+Emergency Waiting Time:  44.0s
 Intersections Cleared:   3
 Preemption Count:        3
 Recovery Completed:      True
 
 TRAFFIC PERFORMANCE:
-Throughput:              159 vehicles
-Average Waiting Time:    66.84s
-Max Queue:               81 vehicles
-Normal Vehicle Wait:     17319.0s
+Throughput:              234 vehicles
+Average Waiting Time:    25.59s
+Max Queue:               19 vehicles
+Normal Vehicle Wait:     6609.0s
 
 ==================================================
 BASELINE VS DYNAMIC CORRIDOR DELTAS (Corridor - Baseline)
 ==================================================
-Emergency Response Delta: -39.0s
-Emergency Waiting Delta:  -39.0s
-Normal Waiting Delta:     -2172.0s
+Emergency Response Delta: -9.0s
+Emergency Waiting Delta:  -9.0s
+Normal Waiting Delta:     -2202.0s
 Average Waiting Delta:    -8.50s
 Throughput Delta:         +9 vehicles
 Max Queue Delta:          -6 vehicles
@@ -490,6 +499,12 @@ npm run dev
 
 ---
 
-## 20. Upgrade Status
+## 20. Upgrade Status, Results and Honest Scope
 
-See [docs/upgrade_status.md](docs/upgrade_status.md) for the eight upgrades (adaptive control, person-weighted objective, fairness, multi-ambulance conflict QUBO, solver arbiter, Pareto slider, IBM hardware path, Belagavi twin), the defects fixed along the way, what the results do and do not show, and known limitations. The Belagavi twin is a labelled simulation abstraction, and the IBM-hardware branch has not been run on a real device in this repository.
+See [docs/upgrade_status.md](docs/upgrade_status.md) for the eight upgrades, the defects fixed along the way, what the results do and do not show, and known limitations.
+
+- **QAOA runs on the local Qiskit Aer simulator.** Ideal-vs-noisy *simulation* is available (generic noise model, not a calibrated device).
+- **Real IBM hardware is optional future validation.** The runtime path (`optimization/ibm_hardware.py`) is implemented and documented but **unverified** until a run on an actual IBM account/device succeeds. No hardware timings, fidelities or results exist in this repository.
+- **The Belagavi content is a "Belagavi-inspired schematic / illustrative topology"**, not a digital twin: junction labels are illustrative and traffic volumes are assumed.
+- **No quantum advantage is claimed.**
+- **Results:** `results/benchmark_results*.json` are regenerated with `python examples/generate_results.py` (see [results/README.md](results/README.md)); all are simulator results.

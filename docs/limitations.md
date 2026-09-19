@@ -21,3 +21,15 @@
 
 1. **Cycle Boundary Synchronization**: To prevent chaotic signal phase jumps, adaptive rolling-horizon plan updates are strictly enforced only at periodic 60-second cycle boundaries.
 2. **Emergency Separation**: Real-time emergency vehicle arrivals do not interrupt or re-trigger QAOA optimization; they invoke high-speed deterministic green corridor preemption, seamlessly restoring the active adaptive plan once the emergency clears.
+
+---
+
+## 4. Release Scope Statements (Simulator-Based Demo)
+
+1. **Whole-junction preemption**: emergency preemption forces the entire junction green; turn phases and per-approach signal groups are not modelled.
+2. **Assumed traffic**: all traffic volumes, occupancies and cross-street demands are simulated/assumed unless explicitly backed by measured data; none are.
+3. **Pareto assumptions**: Pareto results depend on the configured cross-street traffic assumption (`cross_street_rate`) and on the preemption-duty interpretation of lambda.
+4. **Classical simulation of QAOA**: QAOA is executed on Qiskit Aer. Ideal-vs-noisy simulation uses a generic noise model, not a calibrated device.
+5. **Real hardware unverified**: the IBM runtime path is implemented but has not been executed on a real account/device; no hardware results, timings or fidelities are reported anywhere.
+6. **Belagavi**: the Belagavi content is a Belagavi-inspired schematic / illustrative topology, not a digital twin.
+7. **No quantum advantage is claimed.**
