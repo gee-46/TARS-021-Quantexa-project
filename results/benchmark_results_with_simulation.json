@@ -1,0 +1,542 @@
+[
+  {
+    "scenario_id": "phase7_deterministic",
+    "trial_index": 0,
+    "seed": 84,
+    "controller_name": "Fixed-Time (30s)",
+    "signal_plan": {
+      "I1": 30,
+      "I2": 30,
+      "I3": 30,
+      "I4": 30
+    },
+    "optimization_metrics": {
+      "status": "success",
+      "runtime_seconds": 5.6600081734359264e-05,
+      "qubo_energy": 107.55555555555554,
+      "best_bitstring": "010010010010",
+      "fallback_used": false,
+      "fallback_reason": null,
+      "solver_used": "fixed",
+      "onehot_valid": true,
+      "emergency_valid": false,
+      "exact_optimum_energy": -95.55555555555554,
+      "optimality_gap": 203.1111111111111,
+      "exact_optimum_found": false
+    },
+    "traffic_metrics": {
+      "available": true,
+      "total_waiting_time": 16872.0,
+      "average_waiting_time": 71.49152542372882,
+      "max_queue": 42.0,
+      "average_queue": 56.24,
+      "throughput": 150.0,
+      "emergency_response_time": 70.0,
+      "emergency_delay": 66.0
+    }
+  },
+  {
+    "scenario_id": "phase7_deterministic",
+    "trial_index": 1,
+    "seed": 1084,
+    "controller_name": "Fixed-Time (30s)",
+    "signal_plan": {
+      "I1": 30,
+      "I2": 30,
+      "I3": 30,
+      "I4": 30
+    },
+    "optimization_metrics": {
+      "status": "success",
+      "runtime_seconds": 9.940005838871002e-05,
+      "qubo_energy": 107.55555555555554,
+      "best_bitstring": "010010010010",
+      "fallback_used": false,
+      "fallback_reason": null,
+      "solver_used": "fixed",
+      "onehot_valid": true,
+      "emergency_valid": false,
+      "exact_optimum_energy": -95.55555555555554,
+      "optimality_gap": 203.1111111111111,
+      "exact_optimum_found": false
+    },
+    "traffic_metrics": {
+      "available": true,
+      "total_waiting_time": 15428.0,
+      "average_waiting_time": 67.66666666666667,
+      "max_queue": 47.0,
+      "average_queue": 51.42666666666667,
+      "throughput": 150.0,
+      "emergency_response_time": 68.0,
+      "emergency_delay": 64.0
+    }
+  },
+  {
+    "scenario_id": "phase7_deterministic",
+    "trial_index": 2,
+    "seed": 2084,
+    "controller_name": "Fixed-Time (30s)",
+    "signal_plan": {
+      "I1": 30,
+      "I2": 30,
+      "I3": 30,
+      "I4": 30
+    },
+    "optimization_metrics": {
+      "status": "success",
+      "runtime_seconds": 8.929998148232698e-05,
+      "qubo_energy": 107.55555555555554,
+      "best_bitstring": "010010010010",
+      "fallback_used": false,
+      "fallback_reason": null,
+      "solver_used": "fixed",
+      "onehot_valid": true,
+      "emergency_valid": false,
+      "exact_optimum_energy": -95.55555555555554,
+      "optimality_gap": 203.1111111111111,
+      "exact_optimum_found": false
+    },
+    "traffic_metrics": {
+      "available": true,
+      "total_waiting_time": 20270.0,
+      "average_waiting_time": 80.43650793650794,
+      "max_queue": 53.0,
+      "average_queue": 67.56666666666666,
+      "throughput": 150.0,
+      "emergency_response_time": 105.0,
+      "emergency_delay": 101.0
+    }
+  },
+  {
+    "scenario_id": "phase7_deterministic",
+    "trial_index": 0,
+    "seed": 84,
+    "controller_name": "Rule-Based Heuristic",
+    "signal_plan": {
+      "I1": 30,
+      "I2": 45,
+      "I3": 30,
+      "I4": 45
+    },
+    "optimization_metrics": {
+      "status": "success",
+      "runtime_seconds": 0.00013219995889812708,
+      "qubo_energy": -44.52777777777783,
+      "best_bitstring": "010001010001",
+      "fallback_used": false,
+      "fallback_reason": null,
+      "solver_used": "rule_based",
+      "onehot_valid": true,
+      "emergency_valid": false,
+      "exact_optimum_energy": -95.55555555555554,
+      "optimality_gap": 51.027777777777715,
+      "exact_optimum_found": false
+    },
+    "traffic_metrics": {
+      "available": true,
+      "total_waiting_time": 13884.0,
+      "average_waiting_time": 58.83050847457627,
+      "max_queue": 69.0,
+      "average_queue": 46.28,
+      "throughput": 162.0,
+      "emergency_response_time": 60.0,
+      "emergency_delay": 56.0
+    }
+  },
+  {
+    "scenario_id": "phase7_deterministic",
+    "trial_index": 1,
+    "seed": 1084,
+    "controller_name": "Rule-Based Heuristic",
+    "signal_plan": {
+      "I1": 30,
+      "I2": 45,
+      "I3": 30,
+      "I4": 45
+    },
+    "optimization_metrics": {
+      "status": "success",
+      "runtime_seconds": 8.939998224377632e-05,
+      "qubo_energy": -44.52777777777783,
+      "best_bitstring": "010001010001",
+      "fallback_used": false,
+      "fallback_reason": null,
+      "solver_used": "rule_based",
+      "onehot_valid": true,
+      "emergency_valid": false,
+      "exact_optimum_energy": -95.55555555555554,
+      "optimality_gap": 51.027777777777715,
+      "exact_optimum_found": false
+    },
+    "traffic_metrics": {
+      "available": true,
+      "total_waiting_time": 12480.0,
+      "average_waiting_time": 54.73684210526316,
+      "max_queue": 54.0,
+      "average_queue": 41.6,
+      "throughput": 162.0,
+      "emergency_response_time": 58.0,
+      "emergency_delay": 54.0
+    }
+  },
+  {
+    "scenario_id": "phase7_deterministic",
+    "trial_index": 2,
+    "seed": 2084,
+    "controller_name": "Rule-Based Heuristic",
+    "signal_plan": {
+      "I1": 30,
+      "I2": 45,
+      "I3": 30,
+      "I4": 45
+    },
+    "optimization_metrics": {
+      "status": "success",
+      "runtime_seconds": 8.770008571445942e-05,
+      "qubo_energy": -44.52777777777783,
+      "best_bitstring": "010001010001",
+      "fallback_used": false,
+      "fallback_reason": null,
+      "solver_used": "rule_based",
+      "onehot_valid": true,
+      "emergency_valid": false,
+      "exact_optimum_energy": -95.55555555555554,
+      "optimality_gap": 51.027777777777715,
+      "exact_optimum_found": false
+    },
+    "traffic_metrics": {
+      "available": true,
+      "total_waiting_time": 17276.0,
+      "average_waiting_time": 68.55555555555556,
+      "max_queue": 83.0,
+      "average_queue": 57.586666666666666,
+      "throughput": 162.0,
+      "emergency_response_time": 62.0,
+      "emergency_delay": 58.0
+    }
+  },
+  {
+    "scenario_id": "phase7_deterministic",
+    "trial_index": 0,
+    "seed": 84,
+    "controller_name": "Rule-Based (Emerg)",
+    "signal_plan": {
+      "I1": 30,
+      "I2": 45,
+      "I3": 45,
+      "I4": 45
+    },
+    "optimization_metrics": {
+      "status": "success",
+      "runtime_seconds": 7.840001489967108e-05,
+      "qubo_energy": -95.11111111111109,
+      "best_bitstring": "010001001001",
+      "fallback_used": false,
+      "fallback_reason": null,
+      "solver_used": "rule_based",
+      "onehot_valid": true,
+      "emergency_valid": true,
+      "exact_optimum_energy": -95.55555555555554,
+      "optimality_gap": 0.4444444444444571,
+      "exact_optimum_found": false
+    },
+    "traffic_metrics": {
+      "available": true,
+      "total_waiting_time": 5959.0,
+      "average_waiting_time": 25.25,
+      "max_queue": 15.0,
+      "average_queue": 19.863333333333333,
+      "throughput": 225.0,
+      "emergency_response_time": 55.0,
+      "emergency_delay": 51.0
+    }
+  },
+  {
+    "scenario_id": "phase7_deterministic",
+    "trial_index": 1,
+    "seed": 1084,
+    "controller_name": "Rule-Based (Emerg)",
+    "signal_plan": {
+      "I1": 30,
+      "I2": 45,
+      "I3": 45,
+      "I4": 45
+    },
+    "optimization_metrics": {
+      "status": "success",
+      "runtime_seconds": 0.00011200003791600466,
+      "qubo_energy": -95.11111111111109,
+      "best_bitstring": "010001001001",
+      "fallback_used": false,
+      "fallback_reason": null,
+      "solver_used": "rule_based",
+      "onehot_valid": true,
+      "emergency_valid": true,
+      "exact_optimum_energy": -95.55555555555554,
+      "optimality_gap": 0.4444444444444571,
+      "exact_optimum_found": false
+    },
+    "traffic_metrics": {
+      "available": true,
+      "total_waiting_time": 4984.0,
+      "average_waiting_time": 21.859649122807017,
+      "max_queue": 15.0,
+      "average_queue": 16.613333333333333,
+      "throughput": 212.0,
+      "emergency_response_time": 53.0,
+      "emergency_delay": 49.0
+    }
+  },
+  {
+    "scenario_id": "phase7_deterministic",
+    "trial_index": 2,
+    "seed": 2084,
+    "controller_name": "Rule-Based (Emerg)",
+    "signal_plan": {
+      "I1": 30,
+      "I2": 45,
+      "I3": 45,
+      "I4": 45
+    },
+    "optimization_metrics": {
+      "status": "success",
+      "runtime_seconds": 8.439994417130947e-05,
+      "qubo_energy": -95.11111111111109,
+      "best_bitstring": "010001001001",
+      "fallback_used": false,
+      "fallback_reason": null,
+      "solver_used": "rule_based",
+      "onehot_valid": true,
+      "emergency_valid": true,
+      "exact_optimum_energy": -95.55555555555554,
+      "optimality_gap": 0.4444444444444571,
+      "exact_optimum_found": false
+    },
+    "traffic_metrics": {
+      "available": true,
+      "total_waiting_time": 9335.0,
+      "average_waiting_time": 37.04365079365079,
+      "max_queue": 17.0,
+      "average_queue": 31.116666666666667,
+      "throughput": 225.0,
+      "emergency_response_time": 57.0,
+      "emergency_delay": 53.0
+    }
+  },
+  {
+    "scenario_id": "phase7_deterministic",
+    "trial_index": 0,
+    "seed": 84,
+    "controller_name": "Classical SA",
+    "signal_plan": {
+      "I1": 45,
+      "I2": 45,
+      "I3": 45,
+      "I4": 45
+    },
+    "optimization_metrics": {
+      "status": "success",
+      "runtime_seconds": 0.012781099998392165,
+      "qubo_energy": -95.55555555555554,
+      "best_bitstring": "001001001001",
+      "fallback_used": false,
+      "fallback_reason": null,
+      "solver_used": "sa",
+      "onehot_valid": true,
+      "emergency_valid": true,
+      "exact_optimum_energy": -95.55555555555554,
+      "optimality_gap": 0.0,
+      "exact_optimum_found": true
+    },
+    "traffic_metrics": {
+      "available": true,
+      "total_waiting_time": 5953.0,
+      "average_waiting_time": 25.22457627118644,
+      "max_queue": 15.0,
+      "average_queue": 19.843333333333334,
+      "throughput": 225.0,
+      "emergency_response_time": 55.0,
+      "emergency_delay": 51.0
+    }
+  },
+  {
+    "scenario_id": "phase7_deterministic",
+    "trial_index": 1,
+    "seed": 1084,
+    "controller_name": "Classical SA",
+    "signal_plan": {
+      "I1": 45,
+      "I2": 45,
+      "I3": 45,
+      "I4": 45
+    },
+    "optimization_metrics": {
+      "status": "success",
+      "runtime_seconds": 0.012514300062321126,
+      "qubo_energy": -95.55555555555554,
+      "best_bitstring": "001001001001",
+      "fallback_used": false,
+      "fallback_reason": null,
+      "solver_used": "sa",
+      "onehot_valid": true,
+      "emergency_valid": true,
+      "exact_optimum_energy": -95.55555555555554,
+      "optimality_gap": 0.0,
+      "exact_optimum_found": true
+    },
+    "traffic_metrics": {
+      "available": true,
+      "total_waiting_time": 4925.0,
+      "average_waiting_time": 21.600877192982455,
+      "max_queue": 15.0,
+      "average_queue": 16.416666666666668,
+      "throughput": 213.0,
+      "emergency_response_time": 53.0,
+      "emergency_delay": 49.0
+    }
+  },
+  {
+    "scenario_id": "phase7_deterministic",
+    "trial_index": 2,
+    "seed": 2084,
+    "controller_name": "Classical SA",
+    "signal_plan": {
+      "I1": 45,
+      "I2": 45,
+      "I3": 45,
+      "I4": 45
+    },
+    "optimization_metrics": {
+      "status": "success",
+      "runtime_seconds": 0.016857200069352984,
+      "qubo_energy": -95.55555555555554,
+      "best_bitstring": "001001001001",
+      "fallback_used": false,
+      "fallback_reason": null,
+      "solver_used": "sa",
+      "onehot_valid": true,
+      "emergency_valid": true,
+      "exact_optimum_energy": -95.55555555555554,
+      "optimality_gap": 0.0,
+      "exact_optimum_found": true
+    },
+    "traffic_metrics": {
+      "available": true,
+      "total_waiting_time": 9319.0,
+      "average_waiting_time": 36.98015873015873,
+      "max_queue": 23.0,
+      "average_queue": 31.063333333333333,
+      "throughput": 225.0,
+      "emergency_response_time": 57.0,
+      "emergency_delay": 53.0
+    }
+  },
+  {
+    "scenario_id": "phase7_deterministic",
+    "trial_index": 0,
+    "seed": 84,
+    "controller_name": "Hybrid QuantumFlow",
+    "signal_plan": {
+      "I1": 15,
+      "I2": 45,
+      "I3": 45,
+      "I4": 45
+    },
+    "optimization_metrics": {
+      "status": "success",
+      "runtime_seconds": 1.3340416999999434,
+      "qubo_energy": -88.77777777777783,
+      "best_bitstring": "100001001001",
+      "fallback_used": false,
+      "fallback_reason": null,
+      "solver_used": "qaoa",
+      "onehot_valid": true,
+      "emergency_valid": true,
+      "exact_optimum_energy": -95.55555555555554,
+      "optimality_gap": 6.777777777777715,
+      "exact_optimum_found": false
+    },
+    "traffic_metrics": {
+      "available": true,
+      "total_waiting_time": 8246.0,
+      "average_waiting_time": 34.940677966101696,
+      "max_queue": 36.0,
+      "average_queue": 27.486666666666668,
+      "throughput": 199.0,
+      "emergency_response_time": 55.0,
+      "emergency_delay": 51.0
+    }
+  },
+  {
+    "scenario_id": "phase7_deterministic",
+    "trial_index": 1,
+    "seed": 1084,
+    "controller_name": "Hybrid QuantumFlow",
+    "signal_plan": {
+      "I1": 45,
+      "I2": 45,
+      "I3": 45,
+      "I4": 45
+    },
+    "optimization_metrics": {
+      "status": "success",
+      "runtime_seconds": 0.9738283000187948,
+      "qubo_energy": -95.55555555555554,
+      "best_bitstring": "001001001001",
+      "fallback_used": true,
+      "fallback_reason": "invalid_emergency",
+      "solver_used": "sa",
+      "onehot_valid": true,
+      "emergency_valid": true,
+      "exact_optimum_energy": -95.55555555555554,
+      "optimality_gap": 0.0,
+      "exact_optimum_found": true
+    },
+    "traffic_metrics": {
+      "available": true,
+      "total_waiting_time": 4925.0,
+      "average_waiting_time": 21.600877192982455,
+      "max_queue": 15.0,
+      "average_queue": 16.416666666666668,
+      "throughput": 213.0,
+      "emergency_response_time": 53.0,
+      "emergency_delay": 49.0
+    }
+  },
+  {
+    "scenario_id": "phase7_deterministic",
+    "trial_index": 2,
+    "seed": 2084,
+    "controller_name": "Hybrid QuantumFlow",
+    "signal_plan": {
+      "I1": 45,
+      "I2": 45,
+      "I3": 45,
+      "I4": 45
+    },
+    "optimization_metrics": {
+      "status": "success",
+      "runtime_seconds": 1.4189158000517637,
+      "qubo_energy": -95.55555555555554,
+      "best_bitstring": "001001001001",
+      "fallback_used": true,
+      "fallback_reason": "invalid_onehot",
+      "solver_used": "sa",
+      "onehot_valid": true,
+      "emergency_valid": true,
+      "exact_optimum_energy": -95.55555555555554,
+      "optimality_gap": 0.0,
+      "exact_optimum_found": true
+    },
+    "traffic_metrics": {
+      "available": true,
+      "total_waiting_time": 9319.0,
+      "average_waiting_time": 36.98015873015873,
+      "max_queue": 23.0,
+      "average_queue": 31.063333333333333,
+      "throughput": 225.0,
+      "emergency_response_time": 57.0,
+      "emergency_delay": 53.0
+    }
+  }
+]

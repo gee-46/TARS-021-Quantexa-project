@@ -1,0 +1,7 @@
+qiskit==2.5.2
+qiskit-aer==0.17.2
+dwave-neal==0.6.0
+dimod==0.12.22
+numpy>=2.0.0
+scipy>=1.14.0
+pytest>=8.0.0
