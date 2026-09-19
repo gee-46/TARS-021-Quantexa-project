@@ -4,13 +4,13 @@ const FALLBACK_RGB = { r: 255, g: 255, b: 255 };
 
 const LetterGlitch = ({
   glitchColors = ['#2b4539', '#61dca3', '#61b3dc'],
-  className = '',
   glitchSpeed = 50,
   centerVignette = false,
   outerVignette = true,
   smooth = true,
   lightMode = false,
   backgroundColor,
+  className = '',
   characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ!@#$&*()-_+=/[]{};:<>.,0123456789'
 }) => {
   const canvasRef = useRef(null);
@@ -36,7 +36,7 @@ const LetterGlitch = ({
 
   const hexToRgb = hex => {
     const shorthandRegex = /^#?([a-f\d])([a-f\d])([a-f\d])$/i;
-    hex = hex.replace(shorthandRegex, (m, r, g, b) => {
+    hex = hex.replace(shorthandRegex, (_m, r, g, b) => {
       return r + r + g + g + b + b;
     });
 
@@ -51,9 +51,7 @@ const LetterGlitch = ({
   };
 
   // Interpolation happens in numbers, and the CSS string is only built at
-  // paint time. Previously the formatted `rgb(...)` string was stored back
-  // on the letter and fed to hexToRgb on the next frame, which returned null
-  // and froze the transition after a single step.
+  // paint time.
   const mixRgb = (start, end, factor) => ({
     r: Math.round(start.r + (end.r - start.r) * factor),
     g: Math.round(start.g + (end.g - start.g) * factor),
@@ -107,7 +105,6 @@ const LetterGlitch = ({
 
     const { columns, rows } = calculateGrid(rect.width, rect.height);
     initializeLetters(columns, rows);
-
     drawLetters();
   };
 
@@ -137,8 +134,6 @@ const LetterGlitch = ({
       if (!letters.current[index]) continue;
 
       letters.current[index].char = getRandomChar();
-      // A new transition starts from the colour currently on screen, so a
-      // letter picked again mid-fade continues instead of jumping.
       letters.current[index].fromRgb = letters.current[index].rgb;
       letters.current[index].targetRgb = getRandomRgb();
 
@@ -209,51 +204,50 @@ const LetterGlitch = ({
       window.removeEventListener('resize', handleResize);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [glitchSpeed, smooth]);
-
-  const containerStyle = {
-    position: 'relative',
-    width: '100%',
-    height: '100%',
-    backgroundColor: backgroundColor || (lightMode ? '#ffffff' : '#000000'),
-    overflow: 'hidden'
-  };
-
-  const canvasStyle = {
-    display: 'block',
-    width: '100%',
-    height: '100%'
-  };
-
-  const outerVignetteStyle = {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    width: '100%',
-    height: '100%',
-    pointerEvents: 'none',
-    background: lightMode
-      ? 'radial-gradient(circle, rgba(255,255,255,0) 58%, rgba(255,255,255,0.96) 100%)'
-      : 'radial-gradient(circle, rgba(0,0,0,0) 60%, rgba(0,0,0,1) 100%)'
-  };
-
-  const centerVignetteStyle = {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    width: '100%',
-    height: '100%',
-    pointerEvents: 'none',
-    background: lightMode
-      ? 'radial-gradient(circle, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0) 60%)'
-      : 'radial-gradient(circle, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0) 60%)'
-  };
+  }, [glitchSpeed, smooth, characters]);
 
   return (
-    <div style={containerStyle} className={className}>
-      <canvas ref={canvasRef} style={canvasStyle} />
-      {outerVignette && <div style={outerVignetteStyle}></div>}
-      {centerVignette && <div style={centerVignetteStyle}></div>}
+    <div
+      className={`letter-glitch-container ${className}`}
+      style={{
+        position: 'relative',
+        width: '100%',
+        height: '100%',
+        overflow: 'hidden',
+        backgroundColor: backgroundColor || (lightMode ? '#ffffff' : '#000000')
+      }}
+    >
+      <canvas ref={canvasRef} style={{ display: 'block', width: '100%', height: '100%' }} />
+      {outerVignette && (
+        <div
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            width: '100%',
+            height: '100%',
+            pointerEvents: 'none',
+            background: lightMode
+              ? 'radial-gradient(circle, rgba(255,255,255,0) 58%, rgba(255,255,255,0.96) 100%)'
+              : 'radial-gradient(circle, rgba(0,0,0,0) 60%, rgba(0,0,0,1) 100%)'
+          }}
+        />
+      )}
+      {centerVignette && (
+        <div
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            width: '100%',
+            height: '100%',
+            pointerEvents: 'none',
+            background: lightMode
+              ? 'radial-gradient(circle, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0) 60%)'
+              : 'radial-gradient(circle, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0) 60%)'
+          }}
+        />
+      )}
     </div>
   );
 };
