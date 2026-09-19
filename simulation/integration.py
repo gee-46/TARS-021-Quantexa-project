@@ -48,6 +48,10 @@ from simulation.emergency_events import (
 )
 from simulation.emergency_controller import EmergencyCorridorController
 from simulation.engine import TrafficSimulator
+from simulation.adaptive_controller import (
+    AdaptiveRollingHorizonController,
+    ReplanningEvent,
+)
 
 
 def _to_json_safe(val: Any) -> Any:
@@ -112,6 +116,21 @@ class QuantumFlowRunResult:
     binary_vector: Optional[List[int]] = None
     onehot_valid: bool = True
     emergency_valid: bool = True
+    qubit_count: int = 12
+    qaoa_p: Optional[int] = None
+    qaoa_maxiter: Optional[int] = None
+    qaoa_shots: Optional[int] = None
+
+    # Adaptive Rolling-Horizon Telemetry
+    adaptive_enabled: bool = False
+    replan_interval: Optional[int] = None
+    replan_count: int = 0
+    replanning_events: List[Dict[str, Any]] = field(default_factory=list)
+    initial_signal_plan: Optional[Dict[str, int]] = None
+    final_signal_plan: Optional[Dict[str, int]] = None
+    cumulative_optimization_runtime: Optional[float] = None
+    qaoa_execution_count: int = 0
+    sa_fallback_count: int = 0
 
     # Traffic Performance
     simulation_duration: int = 300
@@ -140,6 +159,21 @@ class QuantumFlowRunResult:
     # System State
     final_signal_states: Dict[str, str] = field(default_factory=dict)
     recovery_completed: bool = True
+
+    @property
+    def solver_used(self) -> str:
+        """Alias for optimization_solver."""
+        return self.optimization_solver
+
+    @property
+    def fallback_used(self) -> bool:
+        """Alias for optimization_fallback_used."""
+        return self.optimization_fallback_used
+
+    @property
+    def fallback_reason(self) -> Optional[str]:
+        """Alias for optimization_fallback_reason."""
+        return self.optimization_fallback_reason
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert result object into a pure JSON-serializable Python dictionary without custom encoders."""
@@ -380,6 +414,8 @@ def run_quantumflow_demo(
     seed: int = 42,
     enable_emergency_corridor: bool = True,
     controller: Union[str, BaseController] = "hybrid",
+    enable_adaptive: bool = False,
+    replan_interval: int = 60,
     **kwargs: Any,
 ) -> QuantumFlowRunResult:
     """Execute end-to-end QuantumFlow pipeline: Normal Optimization -> Traffic Simulation -> Emergency Overlay -> Telemetry.
@@ -389,6 +425,8 @@ def run_quantumflow_demo(
         seed: Deterministic random seed for optimization and Poisson arrivals.
         enable_emergency_corridor: If True, activates runtime dynamic emergency green corridor preemption.
         controller: Controller selection ('hybrid', 'sa', 'fixed', 'rule' or BaseController).
+        enable_adaptive: If True, activates closed-loop rolling-horizon replanning at cycle boundaries.
+        replan_interval: Simulation interval in seconds between scheduled adaptive replans (default 60).
         **kwargs: Optional hyperparameter overrides (e.g. qaoa_maxiter, sa_num_sweeps, prepare_lookahead_seconds).
 
     Returns:
@@ -417,30 +455,117 @@ def run_quantumflow_demo(
             f"Invalid scenario type: {type(scenario)}. Expected BenchmarkScenario, SimulationScenario, or None."
         )
 
-    # 2. Resolve Controller and Execute Offline Normal Optimization
-    ctrl = _resolve_controller(controller, **kwargs)
-    ctrl_output: ControllerOutput = ctrl.solve(bench_scenario, seed=seed)
-
-    normal_plan = dict(ctrl_output.signal_plan)
-    sim_scenario.validate_plan(normal_plan)
-
-    opt_status = "success" if ctrl_output.error is None else "failed"
-    opt_solver = ctrl_output.solver_used or ctrl.name
-    opt_fallback_used = bool(ctrl_output.fallback_used) if ctrl_output.fallback_used is not None else False
-
-    # 3. Execute Microscopic Traffic Simulation with Emergency Corridor Overlay
     lookahead = kwargs.get("prepare_lookahead_seconds", 3)
-    simulator = TrafficSimulator(
-        scenario=sim_scenario,
-        enable_emergency_corridor=enable_emergency_corridor,
-        prepare_lookahead_seconds=lookahead,
-    )
-    metrics: SimulationMetrics = simulator.simulate(
-        signal_plan=normal_plan,
-        seed=seed,
-    )
 
-    # 4. Extract Final Signal Modes & Determine Recovery State
+    if enable_adaptive:
+        # Closed-Loop Adaptive Rolling-Horizon Pipeline
+        adaptive_ctrl = AdaptiveRollingHorizonController(
+            scenario=sim_scenario,
+            replan_interval=replan_interval,
+            qaoa_p=kwargs.get("qaoa_p", 1),
+            qaoa_maxiter=kwargs.get("qaoa_maxiter", 30),
+            qaoa_shots=kwargs.get("qaoa_shots", 1024),
+            sa_num_reads=kwargs.get("sa_num_reads", 100),
+            sa_num_sweeps=kwargs.get("sa_num_sweeps", 1000),
+            solver_seed=seed,
+        )
+        initial_plan = adaptive_ctrl.generate_initial_plan()
+        normal_plan = initial_plan
+        ctrl_name = "adaptive_hybrid_rolling_horizon"
+
+        simulator = TrafficSimulator(
+            scenario=sim_scenario,
+            enable_emergency_corridor=enable_emergency_corridor,
+            prepare_lookahead_seconds=lookahead,
+            adaptive_controller=adaptive_ctrl,
+        )
+        metrics: SimulationMetrics = simulator.simulate(
+            signal_plan=initial_plan,
+            seed=seed,
+            adaptive_controller=adaptive_ctrl,
+        )
+
+        first_ev = adaptive_ctrl.replan_events[0]
+        opt_status = "success"
+        opt_solver = "adaptive_hybrid"
+        opt_energy = float(first_ev.optimization_energy)
+        opt_runtime = float(adaptive_ctrl.cumulative_optimization_runtime)
+        opt_fallback_used = bool(first_ev.fallback_used)
+        opt_fallback_reason = first_ev.fallback_reason
+        can_bitstr = first_ev.canonical_bitstring
+        bin_vec = [int(b) for b in can_bitstr] if can_bitstr else None
+        onehot_v = first_ev.onehot_valid
+        emerg_v = first_ev.emergency_valid
+        q_count = first_ev.qubit_count
+        qp = first_ev.qaoa_p
+        q_maxiter = kwargs.get("qaoa_maxiter", 30)
+        q_shots = first_ev.qaoa_shots
+
+        final_plan = dict(adaptive_ctrl.current_plan if adaptive_ctrl.current_plan else initial_plan)
+        replan_events_list = adaptive_ctrl.events_as_dict()
+        replan_count = adaptive_ctrl.scheduled_replan_count
+        cum_opt_runtime = float(adaptive_ctrl.cumulative_optimization_runtime)
+        qaoa_exec_count = adaptive_ctrl.qaoa_execution_count
+        sa_fallback_count = adaptive_ctrl.sa_fallback_count
+        init_plan = dict(adaptive_ctrl.initial_plan if adaptive_ctrl.initial_plan else initial_plan)
+
+    else:
+        # Standard Static One-Shot Pipeline
+        ctrl = _resolve_controller(controller, **kwargs)
+        ctrl_output: ControllerOutput = ctrl.solve(bench_scenario, seed=seed)
+
+        normal_plan = dict(ctrl_output.signal_plan)
+        sim_scenario.validate_plan(normal_plan)
+
+        opt_status = "success" if ctrl_output.error is None else "failed"
+        opt_solver = ctrl_output.solver_used or ctrl.name
+        opt_fallback_used = bool(ctrl_output.fallback_used) if ctrl_output.fallback_used is not None else False
+        opt_fallback_reason = ctrl_output.fallback_reason
+        opt_energy = float(ctrl_output.qubo_energy)
+        opt_runtime = float(ctrl_output.runtime_seconds)
+        ctrl_name = ctrl.name
+
+        simulator = TrafficSimulator(
+            scenario=sim_scenario,
+            enable_emergency_corridor=enable_emergency_corridor,
+            prepare_lookahead_seconds=lookahead,
+        )
+        metrics: SimulationMetrics = simulator.simulate(
+            signal_plan=normal_plan,
+            seed=seed,
+        )
+
+        raw_res = getattr(ctrl_output, "raw_result", None)
+        q_count = bench_scenario.qubo_model.num_variables if hasattr(bench_scenario, "qubo_model") else NUM_VARIABLES
+        qp = None
+        q_maxiter = None
+        q_shots = None
+
+        if raw_res is not None and hasattr(raw_res, "qaoa_result") and raw_res.qaoa_result is not None:
+            qaoa_res = raw_res.qaoa_result
+            q_count = getattr(qaoa_res, "num_qubits", q_count)
+            qp = getattr(qaoa_res, "p", None)
+            q_maxiter = getattr(qaoa_res, "maxiter", None)
+            q_shots = getattr(qaoa_res, "shots", None)
+        elif hasattr(ctrl, "qaoa_p"):
+            qp = getattr(ctrl, "qaoa_p", None)
+            q_maxiter = getattr(ctrl, "qaoa_maxiter", None)
+            q_shots = getattr(ctrl, "qaoa_shots", None)
+
+        can_bitstr = ctrl_output.canonical_bitstring
+        bin_vec = [int(b) for b in ctrl_output.binary_vector] if ctrl_output.binary_vector else None
+        onehot_v = bool(ctrl_output.onehot_valid)
+        emerg_v = bool(ctrl_output.emergency_valid)
+
+        final_plan = normal_plan
+        init_plan = normal_plan
+        replan_events_list = []
+        replan_count = 0
+        cum_opt_runtime = float(ctrl_output.runtime_seconds)
+        qaoa_exec_count = 1 if (ctrl_output.solver_used == "qaoa" or "hybrid" in ctrl.name) else 0
+        sa_fallback_count = 1 if ctrl_output.fallback_used else 0
+
+    # Extract Final Signal Modes & Determine Recovery State
     if simulator.last_emergency_controller is not None:
         final_signal_states = {
             inter: mode.value
@@ -458,25 +583,37 @@ def run_quantumflow_demo(
     else:
         recovery_completed = bool(metrics.emergency_completed)
 
-    # 5. Construct Final Structured Run Result
-    run_id = f"run_{sim_scenario.scenario_id}_{ctrl.name}_{seed}"
+    run_id = f"run_{sim_scenario.scenario_id}_{ctrl_name}_{seed}"
 
     return QuantumFlowRunResult(
         run_id=run_id,
         scenario_id=sim_scenario.scenario_id,
         seed=seed,
-        normal_controller=ctrl.name,
+        normal_controller=ctrl_name,
         normal_signal_plan=normal_plan,
         optimization_status=opt_status,
         optimization_solver=opt_solver,
-        optimization_energy=float(ctrl_output.qubo_energy),
-        optimization_runtime=float(ctrl_output.runtime_seconds),
+        optimization_energy=opt_energy,
+        optimization_runtime=opt_runtime,
         optimization_fallback_used=opt_fallback_used,
-        optimization_fallback_reason=ctrl_output.fallback_reason,
-        canonical_bitstring=ctrl_output.canonical_bitstring,
-        binary_vector=[int(b) for b in ctrl_output.binary_vector] if ctrl_output.binary_vector else None,
-        onehot_valid=bool(ctrl_output.onehot_valid),
-        emergency_valid=bool(ctrl_output.emergency_valid),
+        optimization_fallback_reason=opt_fallback_reason,
+        canonical_bitstring=can_bitstr,
+        binary_vector=bin_vec,
+        onehot_valid=onehot_v,
+        emergency_valid=emerg_v,
+        qubit_count=int(q_count),
+        qaoa_p=qp,
+        qaoa_maxiter=q_maxiter,
+        qaoa_shots=q_shots,
+        adaptive_enabled=enable_adaptive,
+        replan_interval=replan_interval if enable_adaptive else None,
+        replan_count=replan_count,
+        replanning_events=replan_events_list,
+        initial_signal_plan=init_plan,
+        final_signal_plan=final_plan,
+        cumulative_optimization_runtime=cum_opt_runtime,
+        qaoa_execution_count=qaoa_exec_count,
+        sa_fallback_count=sa_fallback_count,
         simulation_duration=int(sim_scenario.duration_seconds),
         throughput=int(metrics.throughput),
         average_waiting_time=float(metrics.average_waiting_time),
@@ -500,3 +637,70 @@ def run_quantumflow_demo(
         final_signal_states=final_signal_states,
         recovery_completed=recovery_completed,
     )
+
+
+def run_adaptive_vs_static_comparison(
+    scenario: Optional[Any] = None,
+    seed: int = 42,
+    replan_interval: int = 60,
+    enable_emergency_corridor: bool = True,
+    controller: Union[str, BaseController] = "hybrid",
+    **kwargs: Any,
+) -> Dict[str, Any]:
+    """Execute a strictly controlled comparative benchmark between static normal optimization and adaptive rolling-horizon optimization under identical conditions.
+
+    Args:
+        scenario: SimulationScenario or BenchmarkScenario (or None for canonical scenario).
+        seed: Deterministic random seed for arrival realization.
+        replan_interval: Periodic interval in seconds between scheduled adaptive replans.
+        enable_emergency_corridor: If True, activates runtime emergency preemption.
+        controller: Optimization controller selection for static baseline.
+        **kwargs: Additional parameters forwarded to solvers and simulator.
+
+    Returns:
+        Dict[str, Any]: Comprehensive comparison dictionary with full telemetry and factual deltas.
+    """
+    static_res = run_quantumflow_demo(
+        scenario=scenario,
+        seed=seed,
+        enable_emergency_corridor=enable_emergency_corridor,
+        enable_adaptive=False,
+        controller=controller,
+        **kwargs,
+    )
+    adaptive_res = run_quantumflow_demo(
+        scenario=scenario,
+        seed=seed,
+        enable_emergency_corridor=enable_emergency_corridor,
+        enable_adaptive=True,
+        replan_interval=replan_interval,
+        controller=controller,
+        **kwargs,
+    )
+    deltas = compare_runs(baseline=static_res, quantumflow=adaptive_res)
+
+    return {
+        "static": static_res.to_dict(),
+        "adaptive": adaptive_res.to_dict(),
+        "deltas": deltas.to_dict(),
+        "summary": {
+            "throughput_static": static_res.throughput,
+            "throughput_adaptive": adaptive_res.throughput,
+            "throughput_delta": deltas.throughput_delta,
+            "avg_waiting_time_static": static_res.average_waiting_time,
+            "avg_waiting_time_adaptive": adaptive_res.average_waiting_time,
+            "avg_waiting_time_delta": deltas.average_wait_delta,
+            "max_queue_static": static_res.max_queue,
+            "max_queue_adaptive": adaptive_res.max_queue,
+            "max_queue_delta": deltas.max_queue_delta,
+            "normal_vehicles_waiting_time_static": static_res.normal_vehicles_waiting_time,
+            "normal_vehicles_waiting_time_adaptive": adaptive_res.normal_vehicles_waiting_time,
+            "normal_wait_delta": deltas.normal_wait_delta,
+            "replan_count": adaptive_res.replan_count,
+            "qaoa_executions": adaptive_res.qaoa_execution_count,
+            "sa_fallbacks": adaptive_res.sa_fallback_count,
+            "emergency_response_static": static_res.emergency_response_time,
+            "emergency_response_adaptive": adaptive_res.emergency_response_time,
+            "emergency_response_delta": deltas.emergency_response_delta,
+        },
+    }

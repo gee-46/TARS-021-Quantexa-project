@@ -26,28 +26,46 @@ class TrafficSimulator:
         scenario: SimulationScenario,
         enable_emergency_corridor: bool = False,
         prepare_lookahead_seconds: int = 3,
+        adaptive_controller: Optional[Any] = None,
     ):
         self.scenario = scenario
         self.enable_emergency_corridor = enable_emergency_corridor
         self.prepare_lookahead_seconds = prepare_lookahead_seconds
+        self.adaptive_controller = adaptive_controller
         self.last_emergency_controller: Optional[EmergencyCorridorController] = None
+        self.last_adaptive_controller: Optional[Any] = None
 
     def simulate(
         self,
-        signal_plan: Dict[str, int],
+        signal_plan: Optional[Dict[str, int]] = None,
         seed: Optional[int] = None,
+        adaptive_controller: Optional[Any] = None,
     ) -> SimulationMetrics:
-        """Run discrete-time simulation of traffic flow under the specified signal plan.
+        """Run discrete-time simulation of traffic flow under the specified signal plan or adaptive controller.
 
         Args:
-            signal_plan: Map of intersection ID to green duration {"I1": 30, ...}.
+            signal_plan: Map of intersection ID to green duration {"I1": 30, ...} (optional if adaptive_controller provided).
             seed: Deterministic random seed for arrival realization.
+            adaptive_controller: Optional AdaptiveRollingHorizonController for continuous replanning.
 
         Returns:
             SimulationMetrics: Measured traffic performance outcomes.
         """
-        self.scenario.validate_plan(signal_plan)
-        signal_state = SignalState(plan=signal_plan, cycle_length=self.scenario.cycle_length)
+        active_adaptive = adaptive_controller if adaptive_controller is not None else self.adaptive_controller
+        self.last_adaptive_controller = active_adaptive
+
+        if active_adaptive is not None:
+            if active_adaptive.current_plan is None:
+                plan_to_use = active_adaptive.generate_initial_plan()
+            else:
+                plan_to_use = active_adaptive.current_plan
+        else:
+            if signal_plan is None:
+                raise ValueError("signal_plan must be provided when adaptive_controller is None.")
+            plan_to_use = signal_plan
+
+        self.scenario.validate_plan(plan_to_use)
+        signal_state = SignalState(plan=plan_to_use, cycle_length=self.scenario.cycle_length)
         rng = np.random.RandomState(seed if seed is not None else 42)
 
         # Initialize emergency corridor controller
@@ -98,6 +116,13 @@ class TrafficSimulator:
 
         # 2. Discrete Time Step Simulation Loop
         for t in range(self.scenario.duration_seconds):
+            # 0. Check scheduled adaptive rolling-horizon replanning at cycle boundary (t > 0)
+            # Observes the live simulator queues at the BEGINNING of tick t before tick t processing
+            if active_adaptive is not None and active_adaptive.should_replan(t):
+                current_live_queues = {name: len(queues[name]) for name in intersections}
+                new_plan = active_adaptive.replan(second=t, current_queues=current_live_queues)
+                self.scenario.validate_plan(new_plan)
+                signal_state = SignalState(plan=new_plan, cycle_length=self.scenario.cycle_length)
             # A. Check scheduled emergency vehicle arrival
             if (
                 self.scenario.emergency_config is not None
@@ -263,19 +288,21 @@ class TrafficSimulator:
 
 def simulate(
     scenario: SimulationScenario,
-    signal_plan: Dict[str, int],
+    signal_plan: Optional[Dict[str, int]] = None,
     seed: Optional[int] = None,
     enable_emergency_corridor: bool = False,
     prepare_lookahead_seconds: int = 3,
+    adaptive_controller: Optional[Any] = None,
 ) -> SimulationMetrics:
     """Convenience functional API to execute traffic simulation.
 
     Args:
         scenario: SimulationScenario specification.
-        signal_plan: Signal timing plan {"I1": 30, ...}.
+        signal_plan: Signal timing plan {"I1": 30, ...} (optional if adaptive_controller provided).
         seed: Deterministic random seed for arrivals.
         enable_emergency_corridor: If True, activates dynamic green corridor for emergency vehicles.
         prepare_lookahead_seconds: Lookahead seconds for preparing downstream signals.
+        adaptive_controller: Optional AdaptiveRollingHorizonController for continuous replanning.
 
     Returns:
         SimulationMetrics: Resulting traffic performance metrics.
@@ -284,5 +311,10 @@ def simulate(
         scenario=scenario,
         enable_emergency_corridor=enable_emergency_corridor,
         prepare_lookahead_seconds=prepare_lookahead_seconds,
+        adaptive_controller=adaptive_controller,
     )
-    return simulator.simulate(signal_plan=signal_plan, seed=seed)
+    return simulator.simulate(
+        signal_plan=signal_plan,
+        seed=seed,
+        adaptive_controller=adaptive_controller,
+    )
