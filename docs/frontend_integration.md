@@ -24,7 +24,7 @@ The visual system (landing page, orb, layout, sidebar, network canvas, cards) is
 
 ## Map, NetworkX and Plotly
 
-The legacy Streamlit app in `traffic_optimization/` used Folium, NetworkX and Plotly. The React control center now has real counterparts:
+An earlier Streamlit map app (since removed from the repository) used Folium, NetworkX and Plotly. The React control center has real counterparts:
 
 | Legacy | React control center | Notes |
 |---|---|---|

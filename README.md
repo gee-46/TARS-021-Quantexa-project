@@ -296,8 +296,6 @@ pip install -r requirements.txt      # includes streamlit for the dashboard
 python -m pytest -q
 ```
 
-`traffic_optimization/` is a separate legacy Streamlit map app with its own `traffic_optimization/requirements.txt` (folium, plotly, ...); it is not part of the tested core.
-
 ---
 
 ## 14. Running the Demonstration
@@ -375,75 +373,22 @@ Energy Delta:             +0.0000
 
 ```
 TARS-021-Quantexa-project/
-├── README.md                           # Comprehensive documentation & research summary
-├── requirements.txt                    # Pinned core dependency specifications
-├── docs/
-│   ├── ising_mapping.md                # QUBO to Ising transformation proofs & verification
-│   ├── integration_contract.md         # Data schemas, backend API, & serialization contract
-│   └── final_validation.md             # Complete end-to-end regression & validation report
-├── docs/
-│   ├── architecture.md                 # Full system architecture and end-to-end pipeline
-│   ├── objective_design.md             # QUBO mathematical formulations and penalties
-│   ├── multi_emergency.md              # Multi-vehicle emergency arbitration and conflict QUBO
-│   ├── benchmark_methodology.md        # Reproducible benchmarking and evaluation protocol
-│   ├── limitations.md                  # Modeling assumptions and quantum computing disclaimers
-│   ├── upgrade_audit.md                # Phase-by-phase hardening and upgrade audit
-│   └── integration_contract.md         # Telemetry schemas and serialization contracts
-├── examples/
-│   └── run_quantumflow_demo.py         # Reproducible canonical demonstration runner
-├── optimization/
-│   ├── __init__.py                     # Module exports
-│   ├── variables.py                    # Canonical 12-variable indexing & topology mappings
-│   ├── traffic_objectives.py           # Objective function components, people-weighting & Jain fairness
-│   ├── onehot.py                       # One-hot penalty formulation
-│   ├── coupling.py                     # Inter-intersection coupling penalties
-│   ├── emergency.py                    # Emergency corridor constraints
-│   ├── emergency_conflict.py           # Multi-emergency conflict QUBO & priority sequencing
-│   ├── solver_arbiter.py               # Objective comparative benchmark (QAOA vs SA vs Greedy)
-│   ├── pareto.py                       # Multi-objective Pareto trade-off curve evaluator (lambda sweep)
-│   ├── qubo_model.py                   # Upper-triangular QUBOModel data structure
-│   ├── qubo_builder.py                 # QUBO matrix assembly & parameter weighting
-│   ├── ising_converter.py              # Exact QUBO to Ising Hamiltonian transformation
-│   ├── enumeration.py                  # Exhaustive 4096-state ground truth solver & normalized metrics
-│   ├── qaoa_solver.py                  # Parameterized QAOA ansatz & Aer execution
-│   ├── production_qaoa.py              # Production 12-qubit QAOA solver with timeout protection
-│   ├── sa_solver.py                    # Classical Simulated Annealing baseline (dwave-neal)
-│   ├── decoder.py                      # Bitstring decoding & feasibility validation
-│   ├── hybrid_solver.py                # QAOA primary solver with automated SA fallback
-│   ├── controllers.py                  # Standardized traffic controller adapters
-│   ├── benchmark_metrics.py            # TrialResult and telemetry containers
-│   └── benchmark.py                    # Controlled multi-scenario benchmark runner (Scenarios A-G)
-├── simulation/
-│   ├── __init__.py                     # Module exports
-│   ├── models.py                       # Microscopic Vehicle, VehicleTypeConfig, and SignalState
-│   ├── scenario.py                     # SimulationScenario & canonical factory (Scenarios A-G)
-│   ├── adaptive_controller.py          # Closed-loop rolling horizon replanning controller
-│   ├── emergency_events.py             # Event types, modes, and EmergencyEvent records
-│   ├── emergency_controller.py         # Dynamic route-aware multi-emergency green corridor controller
-│   ├── emissions.py                    # Idling vehicle delay, fuel burn, and CO2 emissions model
-│   ├── engine.py                       # Discrete-time microscopic TrafficSimulator
-│   ├── metrics.py                      # SimulationMetrics calculations & Jain fairness
-│   └── integration.py                  # End-to-end pipeline runner & JSON serialization
-└── tests/
-    ├── __init__.py
-    ├── test_qubo.py                    # QUBO component & assembly unit tests
-    ├── test_ising.py                   # QUBO-Ising exact equivalence verification
-    ├── test_qaoa.py                    # Small-scale QAOA circuit verification
-    ├── test_production_qaoa.py         # 12-qubit QAOA production solver tests
-    ├── test_sa_solver.py               # Simulated annealing baseline tests
-    ├── test_decoder.py                 # One-hot and emergency feasibility tests
-    ├── test_hybrid_solver.py           # Hybrid fallback and timeout tests
-    ├── test_adaptive_controller.py     # Rolling horizon adaptive replanning tests
-    ├── test_emergency_conflict.py      # Multi-emergency conflict QUBO tests
-    ├── test_solver_arbiter.py          # QAOA vs SA vs Greedy arbiter tests
-    ├── test_people_metrics.py          # Passenger occupancy & person-delay tests
-    ├── test_fairness.py                # Jain fairness & starvation penalty tests
-    ├── test_emissions.py               # Deterministic fuel & CO2 emissions tests
-    ├── test_pareto.py                  # Pareto multi-objective lambda sweep tests
-    ├── test_benchmark.py               # Benchmark framework tests
-    ├── test_simulation.py              # Microscopic traffic simulator tests
-    ├── test_emergency_corridor.py      # Dynamic green corridor & recovery tests
-    └── test_integration.py             # End-to-end integration & serialization tests
+├── README.md
+├── requirements.txt / requirements-ibm.txt   # Pinned deps (Python 3.10-3.13) / optional IBM runtime
+├── pytest.ini                                # Collects tests/ only
+├── main.py                                   # CLI demo (python main.py) or --gui for Streamlit
+├── api_server.py                             # FastAPI service used by the React control center
+├── streamlit_app.py, dashboard.py            # Streamlit loader + command-center dashboard
+├── docs/                                     # Architecture, QUBO/Ising math, benchmark method, limitations, upgrade status
+├── examples/                                 # run_quantumflow_demo.py, generate_results.py
+├── results/                                  # Regenerated benchmark JSON (simulator only) + provenance README
+├── optimization/                             # QUBO builder, Ising mapping, QAOA/SA/Greedy solvers, arbiter,
+│                                             #   emergency-conflict QUBO, Pareto, hardware (ideal/noisy/IBM opt-in)
+├── simulation/                               # Microscopic simulator, adaptive & emergency controllers, scenarios,
+│                                             #   metrics, emissions, Belagavi-inspired schematic, scenario registry
+├── tests/                                    # pytest suite (solvers, simulator, controllers, API)
+├── src/, public/, index.html, vite.config.js # React control center (Vite): pages, components, services
+└── frontend/webthreads/                      # Streamlit number-glitch loader component
 ```
 
 ---
@@ -452,7 +397,7 @@ TARS-021-Quantexa-project/
 
 The backend validation was established on the following verified environment:
 
-- **Python**: `3.13.5` (compatible with Python $\ge$ 3.10)
+- **Python**: `3.13.x` (supported range 3.10-3.13; 3.14 is not supported by the pinned NumPy)
 - **Qiskit**: `2.5.2`
 - **Qiskit Aer**: `0.17.2`
 - **dwave-neal**: `0.6.0`
