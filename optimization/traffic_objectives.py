@@ -48,6 +48,9 @@ class TrafficObjectiveConfig:
         fairness_weight: Weight coefficient for Jain fairness / delay equity balancing.
         starvation_penalty_weight: Weight coefficient for approaches exceeding max_wait_cap.
         max_wait_cap: Maximum acceptable approach delay in seconds before starvation penalty activates.
+        cross_street_weight: Weight for cross-street delay (0.0 = off, the default). Treats each cross street like an approach
+            whose queue is one cycle of arrivals waiting for its share of the cycle: X * (lambda_cross * C) / (C - t).
+        cycle_length: Signal cycle length C in seconds (used by the cross-street term).
     """
 
     wait_weight: float = 2.0  # B
@@ -59,6 +62,8 @@ class TrafficObjectiveConfig:
     fairness_weight: float = 0.0
     starvation_penalty_weight: float = 0.0
     max_wait_cap: float = 120.0
+    cross_street_weight: float = 0.0
+    cycle_length: float = 60.0
 
 
 @dataclass(frozen=True)
@@ -71,6 +76,7 @@ class TrafficState:
         capacities: Optional map of intersection ID to vehicle capacity C_i.
         person_queues: Optional map of intersection ID to total pending passenger count.
         approach_waiting_times: Optional map of intersection ID to maximum approach wait time.
+        cross_rates: Optional map of intersection ID to cross-street arrival rate (vehicles/second).
     """
 
     queues: Dict[str, float]
@@ -78,6 +84,7 @@ class TrafficState:
     capacities: Dict[str, float] = field(default_factory=dict)
     person_queues: Dict[str, float] = field(default_factory=dict)
     approach_waiting_times: Dict[str, float] = field(default_factory=dict)
+    cross_rates: Dict[str, float] = field(default_factory=dict)
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "TrafficState":
@@ -87,6 +94,7 @@ class TrafficState:
         capacities: Dict[str, float] = {}
         person_queues: Dict[str, float] = {}
         approach_waiting_times: Dict[str, float] = {}
+        cross_rates: Dict[str, float] = {}
 
         for inter in INTERSECTIONS:
             inter_data = data.get(inter, {})
@@ -99,6 +107,8 @@ class TrafficState:
                     person_queues[inter] = float(inter_data["person_queue"])
                 if "max_wait" in inter_data:
                     approach_waiting_times[inter] = float(inter_data["max_wait"])
+                if "cross_rate" in inter_data:
+                    cross_rates[inter] = float(inter_data["cross_rate"])
             else:
                 queues[inter] = float(inter_data) if inter_data else 0.0
                 densities[inter] = 0.0
@@ -109,6 +119,7 @@ class TrafficState:
             capacities=capacities,
             person_queues=person_queues,
             approach_waiting_times=approach_waiting_times,
+            cross_rates=cross_rates,
         )
 
 
@@ -162,6 +173,34 @@ def add_wait_term(
             coeff = B * (q_i / float(dur))
             Q[k, k] += coeff
 
+    return Q
+
+
+def add_cross_street_term(
+    Q: np.ndarray,
+    traffic_state: Union[TrafficState, Dict[str, Any]],
+    config: TrafficObjectiveConfig = TrafficObjectiveConfig(),
+) -> np.ndarray:
+    """Add the cross-street delay penalty: a longer arterial green leaves the cross street less of the cycle.
+
+    Formula (mirrors H_wait, whose form is B * q / t for the arterial approach):
+        For variable k = (i, t):
+            Q[k, k] += X * (lambda_cross_i * C) / (C - t)
+    where lambda_cross_i is the cross-street arrival rate at junction i (vehicles/s), C the cycle length, and
+    lambda_cross_i * C the vehicles that accumulate over one cycle. Off when X = 0 or no cross rates are given.
+    """
+    state = traffic_state if isinstance(traffic_state, TrafficState) else TrafficState.from_dict(traffic_state)
+    X = config.cross_street_weight
+    if X <= 0.0 or not state.cross_rates:
+        return Q
+    C = float(config.cycle_length)
+    for inter in INTERSECTIONS:
+        lam = state.cross_rates.get(inter, 0.0)
+        if lam <= 0.0:
+            continue
+        for dur in DURATIONS:
+            k = get_variable_index(inter, dur)
+            Q[k, k] += X * (lam * C) / (C - float(dur))
     return Q
 
 
@@ -266,6 +305,7 @@ def add_traffic_terms(
     Q = add_capacity_term(Q, traffic_state, config)
     Q = add_throughput_term(Q, traffic_state, config)
     Q = add_starvation_fairness_term(Q, traffic_state, config)
+    Q = add_cross_street_term(Q, traffic_state, config)
     return Q
 
 

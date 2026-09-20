@@ -2,6 +2,7 @@ import React from 'react';
 import { Siren, Scale } from 'lucide-react';
 import TrafficNetworkVisualizer from '../components/TrafficNetworkVisualizer';
 import EmergencyCorridorPanel from '../components/EmergencyCorridorPanel';
+import DispatchPanel from '../components/DispatchPanel';
 import { useTraffic } from '../context/TrafficContext';
 import { PageHeader, Panel, DataTable, Note, fmt } from '../components/ui';
 
@@ -22,6 +23,8 @@ export default function EmergencyCorridorPage() {
         <TrafficNetworkVisualizer />
         <EmergencyCorridorPanel />
       </div>
+
+      <DispatchPanel />
 
       {hasAmbulances && !emergencyCorridorActive && !emergencyResult && (
         <Note>Press “Simulate green corridor” to run the same traffic with and without preemption and, for conflicting routes, solve the sequencing QUBO.</Note>

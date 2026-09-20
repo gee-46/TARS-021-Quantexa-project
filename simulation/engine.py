@@ -341,7 +341,10 @@ class TrafficSimulator:
         starv_violations = sum(1 for waits in approach_wait_tracker.values() for w in waits if w > 120.0)
 
         # Environmental Emissions
-        emissions = calculate_emissions(normal_waiting_time)
+        # Idling emissions cover ALL stationary civilian vehicles: arterial traffic plus cross-street traffic (when modelled),
+        # so a plan that shortens arterial queues by starving the cross streets cannot look greener than it is.
+        cross_waiting_time = float(sum(v.waiting_time for v in cross_all))
+        emissions = calculate_emissions(normal_waiting_time + cross_waiting_time)
 
         primary_emerg = all_emergency_vehs[0] if all_emergency_vehs else None
         emergency_vehicle_results = [
@@ -406,6 +409,7 @@ class TrafficSimulator:
             emergency_vehicle_results=emergency_vehicle_results,
             cross_street_person_delay=cross_person_delay,
             cross_street_vehicles=len(cross_all),
+            cross_street_waiting_time=cross_waiting_time,
             approach_mean_queue={
                 name: float(np.mean([snap[name] for snap in queue_history])) if queue_history else 0.0
                 for name in intersections

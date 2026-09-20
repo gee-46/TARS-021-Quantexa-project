@@ -10,6 +10,7 @@ deliberately NOT reachable through this API (an HTTP client must never be able t
 If ``dist/`` (the built React app) exists it is served at ``/`` so one process serves UI + API.
 """
 
+import dataclasses
 import math
 import os
 import threading
@@ -25,13 +26,15 @@ from pydantic import BaseModel, Field
 from optimization.emergency_conflict import arbitrate_conflict, requests_from_configs
 from optimization.ibm_hardware import compare_simulator_vs_hardware
 from optimization.pareto import sweep_pareto_frontier
-from optimization.qubo_builder import FullQUBOConfig, build_qubo
+from optimization.controllers import RuleBasedController
+from optimization.qubo_builder import CROSS_STREET_WEIGHT, FullQUBOConfig, build_qubo
 from optimization.solver_arbiter import arbitrate_solvers, describe_arbiter_outcome
 from simulation import belagavi
 from simulation.engine import TrafficSimulator
-from simulation.integration import run_adaptive_vs_static_comparison
+from simulation.integration import _build_benchmark_scenario_for_simulation, run_adaptive_vs_static_comparison
 from simulation.registry import CANONICAL_TITLES, all_scenarios, is_belagavi_inspired
-from simulation.scenario import SimulationScenario
+from simulation.route_planner import build_graph, plan_route
+from simulation.scenario import EmergencyVehicleConfig, SimulationScenario
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
 DIST = os.path.join(ROOT, "dist")
@@ -119,7 +122,10 @@ def map_geo(scenario_id: str, ids: List[str]) -> Dict[str, Any]:
 
 
 def traffic_state(sc: SimulationScenario) -> Dict[str, Dict[str, float]]:
-    return {i: {"queue": float(sc.initial_queues.get(i, 10)), "density": 0.3} for i in sc.intersections}
+    return {
+        i: {"queue": float(sc.initial_queues.get(i, 10)), "density": 0.3, "cross_rate": float(sc.cross_street_rates.get(i, 0.0))}
+        for i in sc.intersections
+    }
 
 
 def slim_metrics(m: Dict[str, Any]) -> Dict[str, Any]:
@@ -173,6 +179,13 @@ class EmergencyRequest(BaseModel):
     scenario: str
     seed: int = Field(42, ge=0, le=10_000)
     plan: Optional[Dict[str, int]] = None
+
+
+class RouteRequest(BaseModel):
+    scenario: str
+    origin: str
+    destination: str
+    seed: int = Field(42, ge=0, le=10_000)
 
 
 class NoiseRequest(BaseModel):
@@ -327,12 +340,21 @@ def optimize(req: OptimizeRequest) -> JSONResponse:
     sc = get_scenario(req.scenario)
 
     def run() -> Dict[str, Any]:
-        cfg = FullQUBOConfig()
+        # cross-street delay term is on only when the scenario models cross traffic
+        cfg = FullQUBOConfig(cross_street_weight=CROSS_STREET_WEIGHT if sc.cross_street_rates else 0.0)
         qubo = build_qubo(traffic_state(sc), None, config=cfg)
         res = arbitrate_solvers(qubo, qaoa_maxiter=req.qaoa_maxiter, seed=req.seed)
         best_plan = dict(res.best_plan)
         baseline = simulate(sc, FIXED_PLAN, req.seed, False)
         optimized = simulate(sc, best_plan, req.seed, False)
+        # second, stronger reference than the naive fixed plan: the repo's rule-based (queue/density threshold) controller
+        rule_based = None
+        try:
+            rb = RuleBasedController(name="rule_based").solve(_build_benchmark_scenario_for_simulation(sc, seed=req.seed), seed=req.seed)
+            rb_plan = {k: int(v) for k, v in rb.signal_plan.items()}
+            rule_based = {"plan": rb_plan, "metrics": simulate(sc, rb_plan, req.seed, False)}
+        except Exception:  # never let the reference baseline break the main result
+            rule_based = None
         arb = res.to_dict()
         return {
             "qubo": {
@@ -345,6 +367,7 @@ def optimize(req: OptimizeRequest) -> JSONResponse:
                     "capacity_weight": cfg.capacity_weight,
                     "throughput_weight": cfg.throughput_weight,
                     "coupling_weight": cfg.coupling_weight,
+                    "cross_street_weight": cfg.cross_street_weight,
                 },
             },
             "qaoa": {"p": 1, "shots": 1024, "maxiter": req.qaoa_maxiter, "backend": "Qiskit Aer simulator"},
@@ -355,6 +378,8 @@ def optimize(req: OptimizeRequest) -> JSONResponse:
             "best_energy": res.best_energy,
             "baseline": {"plan": dict(FIXED_PLAN), "metrics": baseline},
             "optimized": {"plan": best_plan, "metrics": optimized},
+            "rule_based": rule_based,
+            "cross_street_term": bool(sc.cross_street_rates),
             "note": "QUBO energy measures the optimisation objective, not simulated traffic outcomes; compare the two simulated runs for the latter.",
         }
 
@@ -416,6 +441,51 @@ def emergency(req: EmergencyRequest) -> JSONResponse:
         }
 
     return JSONResponse(cached(("emg", req.scenario, req.seed, tuple(sorted(plan.items()))), run))
+
+
+@app.post("/api/route-plan")
+def route_plan(req: RouteRequest) -> JSONResponse:
+    """Dispatch an ambulance: plan its route on the junction graph (NetworkX, queue-aware), then simulate the corridor."""
+    sc = get_scenario(req.scenario)
+    ids = list(sc.intersections)
+    for n in (req.origin, req.destination):
+        if n not in ids:
+            raise HTTPException(status_code=422, detail=f"Unknown junction '{n}'. Choose one of {ids}.")
+    if req.origin == req.destination:
+        raise HTTPException(status_code=422, detail="Origin and destination must differ.")
+
+    def run() -> Dict[str, Any]:
+        base = simulate(sc, FIXED_PLAN, req.seed, False)
+        rp = plan_route(
+            build_graph(ids),
+            req.origin,
+            req.destination,
+            queues=base["approach_mean_queue"],
+            plan=FIXED_PLAN,
+            cycle=sc.cycle_length,
+            hop_seconds=sc.travel_time_between_intersections,
+            service_rate=sc.service_rate,
+        )
+        # the dispatched ambulance replaces the scenario's own emergency vehicles; everything else is unchanged
+        dispatched = dataclasses.replace(
+            sc,
+            emergency_config=EmergencyVehicleConfig(vehicle_id="AMB_DISPATCH", arrival_time=15, route=tuple(rp.path), priority=1),
+            emergency_vehicles=(),
+        )
+        off = simulate(dispatched, FIXED_PLAN, req.seed, False)
+        on = simulate(dispatched, FIXED_PLAN, req.seed, True)
+        pick = lambda m: next(v for v in m["emergency_vehicle_results"] if v["vehicle_id"] == "AMB_DISPATCH")
+        return {
+            "route": rp.to_dict(),
+            "without_corridor": pick(off),
+            "with_corridor": pick(on),
+            "note": (
+                "The planner ranks paths by hop time plus expected queue delay from the simulated queues. This arterial is a path "
+                "graph, so the route is unique; response times come from the simulator, the expected delay is a planning estimate."
+            ),
+        }
+
+    return JSONResponse(cached(("route", req.scenario, req.origin, req.destination, req.seed), run))
 
 
 @app.get("/api/pareto")

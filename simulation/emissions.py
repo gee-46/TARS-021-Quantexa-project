@@ -9,8 +9,8 @@ Mathematical Model:
 - Direct CO2 Conversion Factor (Gasoline combustion standard):
     c_co2 = 2.31 kg CO2 / Liter of fuel burned
 
-Total Fuel Burn:
-    Fuel(L) = idle_vehicle_seconds * (r_fuel / 3600.0)
+Total Fuel Burn (idle_vehicle_seconds = arterial + cross-street civilian waiting time):
+    Fuel(L) = idle_vehicle_seconds * (r_fuel_per_hour / 3600.0)
 
 Total Carbon Output:
     CO2(kg) = Fuel(L) * c_co2

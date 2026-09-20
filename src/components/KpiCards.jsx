@@ -26,6 +26,7 @@ export default function KpiCards({ defaultOpen = false }) {
     { id: 'thru', label: 'Throughput', unit: `vehicles / ${horizon} s`, v: m.throughput, base: b.throughput, lower: false, f: (x) => fmt.int(x) },
     { id: 'pdelay', label: 'Person-delay', unit: 'person-seconds', v: m.total_person_delay, base: b.total_person_delay, lower: true, f: (x) => fmt.int(x) },
     { id: 'jain', label: 'Fairness (Jain index)', unit: '1.0 = equal', v: m.jain_fairness_index, base: b.jain_fairness_index, lower: false, f: (x) => fmt.n(x, 3), absolute: true },
+    { id: 'fuel', label: 'Idling fuel (model)', unit: `litres / ${horizon} s`, v: m.estimated_fuel_liters, base: b.estimated_fuel_liters, lower: true, f: (x) => fmt.n(x, 2) },
     { id: 'co2', label: 'Idling CO₂ (model)', unit: `kg / ${horizon} s`, v: m.estimated_co2_kg, base: b.estimated_co2_kg, lower: true, f: (x) => fmt.n(x, 2) },
   ];
   const resp = meanResponse(m);

@@ -58,6 +58,13 @@ from optimization.emergency import (
 )
 
 
+# Cross-street delay weight used when a scenario models cross traffic (off otherwise). Calibrated by simulation sweep over five
+# cross-traffic cases (Belagavi-inspired normal / peak / peak+2 ambulances, scenario D with 0.3 and 0.5 veh/s cross demand):
+# w = 0.5 had the lowest worst-case regret (4.2%, mean 1.6%) in total civilian person-delay versus the best of {fixed 30 s,
+# all 45 s, QUBO at any swept weight}. w = 0 (cross street ignored) had 85% worst-case regret. In-sample calibration; see docs.
+CROSS_STREET_WEIGHT = 0.5
+
+
 @dataclass(frozen=True)
 class FullQUBOConfig:
     """Master configuration for all multi-intersection QUBO objective hyperparameters.
@@ -77,6 +84,7 @@ class FullQUBOConfig:
         starvation_penalty_weight: Weight for penalizing approaches exceeding max_wait_cap.
         max_wait_cap: Maximum acceptable delay in seconds before starvation penalty.
         lambda_tradeoff: Trade-off parameter (1.0 = full emergency priority, 0.0 = civilian only).
+        cross_street_weight: Cross-street delay weight (0.0 = off, the default; see add_cross_street_term).
     """
 
     onehot_penalty: float = DEFAULT_ONEHOT_PENALTY  # A = 100.0
@@ -93,6 +101,7 @@ class FullQUBOConfig:
     starvation_penalty_weight: float = 0.0
     max_wait_cap: float = 120.0
     lambda_tradeoff: float = 1.0
+    cross_street_weight: float = 0.0
 
     def to_traffic_config(self) -> TrafficObjectiveConfig:
         """Extract sub-configuration for local traffic terms."""
@@ -106,6 +115,7 @@ class FullQUBOConfig:
             fairness_weight=self.fairness_weight,
             starvation_penalty_weight=self.starvation_penalty_weight,
             max_wait_cap=self.max_wait_cap,
+            cross_street_weight=self.cross_street_weight,
         )
 
     def to_coupling_config(self) -> CouplingConfig:

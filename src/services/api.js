@@ -64,6 +64,10 @@ export const runAdaptive = ({ scenario, seed = 42, interval = 60, qaoaMaxiter = 
 export const runEmergency = ({ scenario, seed = 42, plan = null }) =>
   post('/api/emergency', { scenario, seed, plan });
 
+/** Dispatch an ambulance: plan its route on the junction graph (NetworkX, queue-aware) and simulate the corridor. */
+export const planRoute = ({ scenario, origin, destination, seed = 42 }) =>
+  post('/api/route-plan', { scenario, origin, destination, seed });
+
 export const getPareto = ({ scenario, seed = 42, cross = 0.5 }) =>
   request(`/api/pareto?${qs({ scenario, seed, cross })}`);
 

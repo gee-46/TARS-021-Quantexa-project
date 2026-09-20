@@ -64,6 +64,49 @@ function Timeline({ model, t, seek }) {
   );
 }
 
+function EmissionsPanel({ result, baseline }) {
+  const base = result?.baseline?.metrics || baseline;
+  const cols = [
+    { key: 'fixed', label: 'Fixed 30 s', m: base },
+    result?.rule_based ? { key: 'rule', label: 'Rule-based', m: result.rule_based.metrics } : null,
+    result ? { key: 'solver', label: 'QUBO plan', m: result.optimized.metrics } : null,
+  ].filter(Boolean);
+  if (!base) return null;
+  const rows = [['Idling fuel', 'estimated_fuel_liters', 'L', 2], ['Idling CO₂', 'estimated_co2_kg', 'kg', 2]];
+  return (
+    <Panel title="Fuel & emissions (model)">
+      <table style={{ width: '100%', fontSize: '0.8rem', borderCollapse: 'collapse' }}>
+        <thead>
+          <tr style={{ color: 'var(--muted)', fontSize: '0.66rem', textTransform: 'uppercase', textAlign: 'right' }}>
+            <th style={{ textAlign: 'left', padding: '3px 0' }} />
+            {cols.map((c) => <th key={c.key} style={{ padding: '3px 0 3px 8px', fontWeight: 700 }}>{c.label}</th>)}
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map(([label, key, unit, d]) => (
+            <tr key={key} style={{ borderTop: '1px solid var(--surface-3)', textAlign: 'right' }}>
+              <td style={{ textAlign: 'left', padding: '5px 0', color: 'var(--muted)' }}>{label} ({unit})</td>
+              {cols.map((c) => {
+                const v = c.m[key];
+                const diff = c.key === 'fixed' ? null : (v - base[key]) / base[key];
+                return (
+                  <td key={c.key} style={{ padding: '5px 0 5px 8px', fontVariantNumeric: 'tabular-nums' }}>
+                    <strong>{fmt.n(v, d)}</strong>
+                    {diff !== null && <div style={{ fontSize: '0.68rem', fontWeight: 700, color: diff < 0 ? 'var(--green)' : diff > 0 ? 'var(--red)' : 'var(--muted)' }}>{diff > 0 ? '+' : ''}{(diff * 100).toFixed(1)}%</div>}
+                  </td>
+                );
+              })}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <div style={{ fontSize: '0.7rem', color: 'var(--muted)', lineHeight: 1.45 }}>
+        {result ? 'Simulated over the scenario horizon; idling-only model (0.7 L/veh-h, 2.31 kg CO₂/L) on all stationary civilian vehicles, cross-street included.' : 'Run the QUBO optimisation to compare it with a rule-based controller and the fixed plan.'}
+      </div>
+    </Panel>
+  );
+}
+
 function StatusRow({ k, v, tone }) {
   return (
     <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, padding: '5px 0', borderBottom: '1px solid var(--surface-3)', fontSize: '0.82rem' }}>
@@ -213,6 +256,8 @@ export default function LiveTrafficPage() {
           )}
         </Panel>
 
+        <EmissionsPanel result={optimizationResult} baseline={baselineMetrics} />
+
         <Panel title="Signal control">
           <table style={{ width: '100%', fontSize: '0.8rem', borderCollapse: 'collapse' }}>
             <tbody>
@@ -239,11 +284,15 @@ export default function LiveTrafficPage() {
           <div>
             <StatusRow k="Optimisation" v={phase && ['activating', 'clearing', 'done'].includes(phase) ? 'ACTIVE' : 'STANDBY'} tone={phase && ['activating', 'clearing', 'done'].includes(phase) ? 'green' : undefined} />
             <StatusRow k="Emergency corridor" v={phase && ['activating', 'clearing', 'done'].includes(phase) ? 'ENABLED' : hasAmbulances ? 'READY' : 'N/A'} tone={phase && ['activating', 'clearing', 'done'].includes(phase) ? 'green' : undefined} />
+            <StatusRow k="Hybrid pipeline" v="QAOA (Aer) → SA fallback" />
+            <StatusRow k="Junction coordination" v={`${network.nodes.length} junctions, coupled in one QUBO`} />
             {optimizationResult && <StatusRow k="QUBO best solver" v={optimizationResult.best_solver.toUpperCase()} />}
+            {optimizationResult && <StatusRow k="Cross-street delay term" v={optimizationResult.cross_street_term ? `ON (w = ${optimizationResult.qubo.weights.cross_street_weight})` : 'off (no cross traffic)'} />}
           </div>
           {optimizationResult && <div style={{ fontSize: '0.74rem', color: 'var(--text-2)', lineHeight: 1.45 }}>{optimizationResult.verdict}</div>}
           <div><Btn onClick={handleRunOptimization} disabled={isOptimizing} tone="ghost">{isOptimizing ? 'Solving…' : 'Run QUBO signal optimisation'}</Btn></div>
         </Panel>
+
       </aside>
     </div>
   );

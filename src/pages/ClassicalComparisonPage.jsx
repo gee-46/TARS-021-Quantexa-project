@@ -12,10 +12,12 @@ export default function ClassicalComparisonPage() {
   const cands = r ? Object.values(r.arbiter.candidates) : [];
   const b = r?.baseline.metrics;
   const o = r?.optimized.metrics;
+  const rb = r?.rule_based?.metrics;
   const row = (label, key, d, lowerBetter) => ({
     id: key,
     label,
     base: fmt.n(b[key], d),
+    rule: rb ? fmt.n(rb[key], d) : '—',
     opt: fmt.n(o[key], d),
     diff: b[key] === o[key] ? 'same' : (lowerBetter ? o[key] < b[key] : o[key] > b[key]) ? 'better' : 'worse',
   });
@@ -63,11 +65,12 @@ export default function ClassicalComparisonPage() {
             <Note tone="ok">{r.verdict}</Note>
           </Panel>
 
-          <Panel title="SIMULATED OUTCOME: FIXED 30 s PLAN vs SOLVER PLAN">
+          <Panel title="SIMULATED OUTCOME: FIXED 30 s PLAN vs RULE-BASED vs SOLVER PLAN">
             <DataTable
               columns={[
                 { key: 'label', label: 'Metric' },
                 { key: 'base', label: 'Fixed 30 s' },
+                { key: 'rule', label: `Rule-based${r.rule_based ? ` (${Object.values(r.rule_based.plan).join('/')})` : ''}` },
                 { key: 'opt', label: `Solver plan (${r.best_solver.toUpperCase()})` },
                 { key: 'diff', label: 'Result', render: (x) => <span style={{ color: x.diff === 'better' ? '#1b7f3a' : x.diff === 'worse' ? '#c62828' : 'var(--text-2)', fontWeight: 700 }}>{x.diff}</span> },
               ]}
@@ -77,9 +80,11 @@ export default function ClassicalComparisonPage() {
                 row('Throughput (vehicles)', 'throughput', 0, false),
                 row('Jain fairness', 'jain_fairness_index', 3, false),
                 row('Max approach wait (s)', 'max_approach_wait', 0, true),
+                row('Idling fuel (litres, model)', 'estimated_fuel_liters', 2, true),
                 row('Idling CO₂ (kg, model)', 'estimated_co2_kg', 2, true),
               ]}
             />
+            <Note>Fuel and CO₂ come from an idling-only model (0.7 L per vehicle-hour, 2.31 kg CO₂ per litre) applied to all stationary civilian vehicles, including cross-street vehicles when the scenario has cross traffic.{r.cross_street_term ? ' This scenario models cross traffic, so the QUBO includes a cross-street delay term (weight ' + r.qubo.weights.cross_street_weight + ').' : ''}</Note>
           </Panel>
         </>
       )}

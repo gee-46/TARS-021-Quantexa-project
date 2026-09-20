@@ -14,7 +14,7 @@ import numpy as np
 
 from optimization.variables import INTERSECTIONS, DURATIONS, NUM_VARIABLES
 from optimization.traffic_objectives import TrafficState, TrafficObjectiveConfig
-from optimization.qubo_builder import FullQUBOConfig, build_qubo
+from optimization.qubo_builder import CROSS_STREET_WEIGHT, FullQUBOConfig, build_qubo
 from optimization.qubo_model import QUBOModel
 from optimization.decoder import decode_solution, is_valid_onehot, is_valid_emergency
 from optimization.hybrid_solver import solve_hybrid, HybridSolveResult
@@ -103,6 +103,7 @@ class AdaptiveRollingHorizonController:
             coupling_weight=5.0,
             default_capacity=nominal_capacity,
             emergency_weight=0.0,  # Normal optimizer solves standard traffic distribution
+            cross_street_weight=CROSS_STREET_WEIGHT if scenario.cross_street_rates else 0.0,
         )
         self.qaoa_p = qaoa_p
         self.qaoa_maxiter = qaoa_maxiter
@@ -164,6 +165,7 @@ class AdaptiveRollingHorizonController:
             capacities=capacities_clean,
             person_queues=person_q_clean,
             approach_waiting_times=appr_w_clean,
+            cross_rates={i: float(r) for i, r in self.scenario.cross_street_rates.items() if r > 0},
         )
 
     def generate_initial_plan(self, initial_queues: Optional[Dict[str, Union[int, float]]] = None) -> Dict[str, int]:

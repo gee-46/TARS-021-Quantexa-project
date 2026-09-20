@@ -449,7 +449,7 @@ The React app is a client of `api_server.py`, which returns results computed by 
 
 ## 20. Upgrade Status, Results and Honest Scope
 
-See [docs/upgrade_status.md](docs/upgrade_status.md) for the eight upgrades, the defects fixed along the way, what the results do and do not show, and known limitations.
+See [docs/criteria.md](docs/criteria.md) for the four evaluation criteria (hybrid quantum-classical optimisation, multi-intersection signal management, emergency green-corridor routing, emissions and fuel) with what is implemented, how to see it, and the limits, and [docs/upgrade_status.md](docs/upgrade_status.md) for the eight upgrades, the defects fixed along the way, what the results do and do not show, and known limitations.
 
 - **QAOA runs on the local Qiskit Aer simulator.** Ideal-vs-noisy *simulation* is available (generic noise model, not a calibrated device).
 - **Real IBM hardware is optional future validation.** The runtime path (`optimization/ibm_hardware.py`) is implemented and documented but **unverified** until a run on an actual IBM account/device succeeds. No hardware timings, fidelities or results exist in this repository.

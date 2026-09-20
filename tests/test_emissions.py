@@ -50,3 +50,27 @@ def test_emissions_metrics_serialization():
     assert "estimated_fuel_liters" in d
     assert "estimated_co2_kg" in d
     assert d["idle_vehicle_seconds"] == 1800.0
+
+
+# ---------------------------------------------------------------- engine: cross-street idling is counted
+def test_engine_emissions_include_cross_street_idling_and_are_unchanged_without_it():
+    import dataclasses
+
+    from simulation.engine import TrafficSimulator
+    from simulation.scenario import create_canonical_scenarios
+
+    plan = {"I1": 45, "I2": 45, "I3": 45, "I4": 45}
+    base = create_canonical_scenarios()["scenario_a_balanced"]
+
+    # no cross traffic: emissions come from arterial waiting only (previous behaviour, unchanged)
+    m0 = TrafficSimulator(base).simulate(plan, seed=3)
+    assert m0.cross_street_waiting_time == 0.0
+    assert m0.idle_vehicle_seconds == m0.normal_vehicles_waiting_time
+
+    # with cross traffic: cross-street waiting is added, and the plan's starvation of cross streets shows up in CO2
+    cross = dataclasses.replace(base, cross_street_rates={i: 0.4 for i in base.intersections})
+    m1 = TrafficSimulator(cross).simulate(plan, seed=3)
+    assert m1.cross_street_waiting_time > 0
+    assert m1.idle_vehicle_seconds == pytest.approx(m1.normal_vehicles_waiting_time + m1.cross_street_waiting_time)
+    assert m1.estimated_co2_kg == pytest.approx(m1.idle_vehicle_seconds * (0.7 / 3600.0) * 2.31, rel=1e-3)
+    assert m1.estimated_co2_kg > m0.estimated_co2_kg  # more idling vehicles, more CO2
