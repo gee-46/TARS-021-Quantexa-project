@@ -12,6 +12,8 @@ import EventsPage from './EventsPage.jsx';
 import AnalyticsPage from './AnalyticsPage.jsx';
 import ClassicalComparisonPage from './ClassicalComparisonPage.jsx';
 import ArchitecturePage from './ArchitecturePage.jsx';
+import MapPage from './MapPage.jsx';
+import GraphPage from './GraphPage.jsx';
 import {
   ArrowDown,
   ArrowUp,
@@ -24,16 +26,20 @@ import {
   BarChart3,
   GitCompare,
   Layers,
+  Map,
+  Share2,
 } from 'lucide-react';
 
 const tabs = [
   { id: 'overview', label: 'Command Overview', icon: LayoutDashboard, component: DashboardOverview },
   { id: 'traffic', label: 'Traffic Network', icon: Network, component: TrafficNetworkPage },
+  { id: 'map', label: 'Corridor Map', icon: Map, component: MapPage },
+  { id: 'graph', label: 'Network Graph', icon: Share2, component: GraphPage },
   { id: 'quantum', label: 'Quantum Optimizer', icon: Cpu, component: QuantumOptimizerPage },
   { id: 'emergency', label: 'Emergency Corridor', icon: Siren, component: EmergencyCorridorPage },
-  { id: 'events', label: 'Events & Disruptions', icon: AlertTriangle, component: EventsPage },
-  { id: 'analytics', label: 'Analytics & Emissions', icon: BarChart3, component: AnalyticsPage },
-  { id: 'comparison', label: 'Classical vs Quantum', icon: GitCompare, component: ClassicalComparisonPage },
+  { id: 'events', label: 'Scenarios & Events', icon: AlertTriangle, component: EventsPage },
+  { id: 'analytics', label: 'Analytics & Trade-offs', icon: BarChart3, component: AnalyticsPage },
+  { id: 'comparison', label: 'Solver Comparison', icon: GitCompare, component: ClassicalComparisonPage },
   { id: 'architecture', label: 'System Architecture', icon: Layers, component: ArchitecturePage },
 ];
 

@@ -140,3 +140,28 @@ def test_adaptive_endpoint_returns_replan_timeline():
 def test_responses_are_strict_json():
     r = client.post("/api/optimize", json={"scenario": "scenario_a_balanced", "qaoa_maxiter": 8})
     json.loads(r.text, parse_constant=lambda c: pytest.fail(f"non-standard JSON constant {c}"))
+
+
+def test_network_geo_is_labelled_illustrative_and_not_bangalore():
+    for sid, phrase in (("belagavi_peak", "NOT surveyed"), ("scenario_a_balanced", "No real place")):
+        geo = client.get("/api/network", params={"scenario": sid}).json()["geo"]
+        assert geo["kind"] == "illustrative" and phrase in geo["note"]
+        assert [p["id"] for p in geo["points"]] == ["I1", "I2", "I3", "I4"]
+        assert all(15.0 < p["lat"] < 16.5 and 74.0 < p["lon"] < 75.0 for p in geo["points"])  # near Belagavi, not the old Bangalore coordinates
+        lons = [p["lon"] for p in geo["points"]]
+        assert lons == sorted(lons) and len(set(lons)) == 4
+
+
+def test_graph_endpoint_uses_networkx_and_reports_path_graph():
+    r = client.get("/api/graph", params={"scenario": "scenario_e_two_emergency_conflict"}).json()
+    assert r["library"].startswith("networkx ")
+    assert r["graph"] == {"nodes": 4, "edges": 3, "connected": True, "diameter_hops": 3, "density": 0.5, "is_path_graph": True}
+    by = {n["id"]: n for n in r["nodes"]}
+    assert by["I1"]["degree"] == 1 and by["I2"]["degree"] == 2
+    assert by["I2"]["is_articulation_point"] and by["I3"]["is_articulation_point"]
+    assert not by["I1"]["is_articulation_point"] and not by["I4"]["is_articulation_point"]
+    assert by["I2"]["betweenness"] > by["I1"]["betweenness"] == 0.0
+    amb = {a["vehicle_id"]: a for a in r["ambulance_paths"]}
+    assert amb["AMB_WEST"]["shortest_path"] == ["I4", "I3", "I2"] and amb["AMB_WEST"]["route_is_shortest"]
+    assert amb["AMB_EAST"]["travel_time_s"] == 4  # 2 hops x 2 s per hop
+    assert client.get("/api/graph", params={"scenario": "nope"}).status_code == 404

@@ -56,3 +56,8 @@ html, body, #root {
   from { opacity: 0; transform: translateY(-8px); }
   to { opacity: 1; transform: translateY(0); }
 }
+
+/* Darken the standard OpenStreetMap tiles to match the control center theme (tiles only, not markers). */
+.dark-osm .leaflet-tile-pane {
+  filter: invert(1) hue-rotate(180deg) brightness(0.85) contrast(0.9) saturate(0.6);
+}

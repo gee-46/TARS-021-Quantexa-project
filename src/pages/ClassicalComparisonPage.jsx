@@ -2,7 +2,7 @@ import React from 'react';
 import { GitCompare, Cpu } from 'lucide-react';
 import { useTraffic } from '../context/TrafficContext';
 import { PageHeader, Panel, DataTable, Note, Btn, fmt } from '../components/ui';
-import { BarChart } from '../components/charts';
+import PlotlyChart from '../components/PlotlyChart';
 
 const COLOR = { qaoa: '#a855f7', sa: '#00f5ff', greedy: '#f59e0b' };
 const planText = (p) => Object.entries(p || {}).map(([k, v]) => `${k}:${v}s`).join('  ');
@@ -34,7 +34,22 @@ export default function ClassicalComparisonPage() {
       {r && (
         <>
           <Panel title="QUBO ENERGY BY SOLVER (lower is better)">
-            <BarChart items={cands.map((c) => ({ label: c.solver_name.toUpperCase(), value: c.qubo_energy, color: COLOR[c.solver_name] || '#94a3b8' }))} />
+            <PlotlyChart
+              height={220}
+              data={[
+                {
+                  type: 'bar',
+                  orientation: 'h',
+                  x: cands.map((c) => c.qubo_energy),
+                  y: cands.map((c) => c.solver_name.toUpperCase()),
+                  marker: { color: cands.map((c) => COLOR[c.solver_name] || '#94a3b8') },
+                  text: cands.map((c) => c.qubo_energy.toFixed(2)),
+                  textposition: 'auto',
+                  hovertemplate: '%{y}: energy %{x:.3f}<extra></extra>',
+                },
+              ]}
+              layout={{ xaxis: { title: { text: 'QUBO energy (lower is better)' } }, margin: { l: 80, r: 16, t: 10, b: 46 } }}
+            />
             <DataTable
               columns={[
                 { key: 's', label: 'Solver', render: (c) => <strong>{c.solver_name.toUpperCase()}{c.solver_name === r.best_solver ? ' ★' : ''}</strong> },

@@ -15,6 +15,7 @@ import os
 import threading
 from typing import Any, Dict, List, Optional, Tuple
 
+import networkx as nx
 import numpy as np
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.responses import FileResponse, JSONResponse
@@ -36,6 +37,10 @@ ROOT = os.path.dirname(os.path.abspath(__file__))
 DIST = os.path.join(ROOT, "dist")
 FIXED_PLAN = {"I1": 30, "I2": 30, "I3": 30, "I4": 30}
 QUEUE_REFERENCE_VEHICLES = 40  # UI scale only: queue load % = queue / 40 (assumed, not measured)
+
+# Illustrative map placement (NOT surveyed). Belagavi city centre, junctions spaced ~0.85 km apart in a line.
+MAP_CENTRE = (15.8497, 74.4977)
+MAP_SPACING_DEG = 0.008
 
 app = FastAPI(title="QuantumFlow API", version="1.0")
 
@@ -76,6 +81,21 @@ def get_scenario(scenario_id: str) -> SimulationScenario:
 
 def node_label(scenario_id: str, node: str) -> str:
     return belagavi.junction_name(node) if is_belagavi_inspired(scenario_id) else f"Junction {node}"
+
+
+def illustrative_geo(scenario_id: str, ids: List[str]) -> Dict[str, Any]:
+    """Map placement for the Leaflet view. Always illustrative: no junction position here is surveyed."""
+    lat0, lon0 = MAP_CENTRE
+    mid = (len(ids) - 1) / 2
+    points = [{"id": n, "lat": lat0, "lon": round(lon0 + (i - mid) * MAP_SPACING_DEG, 5)} for i, n in enumerate(ids)]
+    if is_belagavi_inspired(scenario_id):
+        note = (
+            "Illustrative placement near Belagavi's centre. Junction positions are NOT surveyed and do not match the real "
+            "junction locations; the labels are illustrative too."
+        )
+    else:
+        note = "Abstract corridor drawn at an arbitrary map location. No real place is modelled in this scenario."
+    return {"kind": "illustrative", "centre": {"lat": lat0, "lon": lon0}, "points": points, "note": note}
 
 
 def traffic_state(sc: SimulationScenario) -> Dict[str, Dict[str, float]]:
@@ -204,6 +224,7 @@ def network(scenario: str) -> Dict[str, Any]:
         "ambulances": ambulances,
         "cycle_length": sc.cycle_length,
         "duration_seconds": sc.duration_seconds,
+        "geo": illustrative_geo(scenario, ids),
         "fixed_plan": dict(FIXED_PLAN),
         "queue_reference_vehicles": QUEUE_REFERENCE_VEHICLES,
         "occupancy": {
@@ -211,6 +232,65 @@ def network(scenario: str) -> Dict[str, Any]:
             "bus": sc.vehicle_type_config.bus_occupancy,
         },
     }
+
+
+@app.get("/api/graph")
+def graph(scenario: str) -> Dict[str, Any]:
+    """Graph analytics computed with NetworkX on the scenario's junction graph."""
+    sc = get_scenario(scenario)
+    ids = list(sc.intersections)
+    hop = sc.travel_time_between_intersections
+
+    def run() -> Dict[str, Any]:
+        G = nx.Graph()
+        for n in ids:
+            G.add_node(n, label=node_label(scenario, n))
+        for i in range(len(ids) - 1):
+            G.add_edge(ids[i], ids[i + 1], travel_time_s=hop)
+        deg = dict(G.degree())
+        bet = nx.betweenness_centrality(G, normalized=True)
+        clo = nx.closeness_centrality(G)
+        cut = set(nx.articulation_points(G))
+        connected = nx.is_connected(G)
+        paths = []
+        for c in sc.get_all_emergency_configs():
+            sp = nx.shortest_path(G, c.route[0], c.route[-1], weight="travel_time_s")
+            paths.append(
+                {
+                    "vehicle_id": c.vehicle_id,
+                    "route": list(c.route),
+                    "shortest_path": sp,
+                    "route_is_shortest": list(c.route) == sp,
+                    "travel_time_s": nx.shortest_path_length(G, c.route[0], c.route[-1], weight="travel_time_s"),
+                }
+            )
+        return {
+            "library": f"networkx {nx.__version__}",
+            "graph": {
+                "nodes": G.number_of_nodes(),
+                "edges": G.number_of_edges(),
+                "connected": connected,
+                "diameter_hops": nx.diameter(G) if connected else None,
+                "density": nx.density(G),
+                "is_path_graph": all(d <= 2 for d in deg.values()) and G.number_of_edges() == G.number_of_nodes() - 1,
+            },
+            "nodes": [
+                {
+                    "id": n,
+                    "name": node_label(scenario, n),
+                    "degree": deg[n],
+                    "betweenness": bet[n],
+                    "closeness": clo[n],
+                    "is_articulation_point": n in cut,
+                }
+                for n in ids
+            ],
+            "edges": [{"from": u, "to": v, "travel_time_s": d["travel_time_s"]} for u, v, d in G.edges(data=True)],
+            "ambulance_paths": paths,
+            "note": "The arterial is a path graph, so centrality is determined purely by position; travel time is the simulator's per-hop parameter.",
+        }
+
+    return JSONResponse(cached(("graph", scenario), run))
 
 
 @app.post("/api/simulate")

@@ -46,6 +46,9 @@ export const getHealth = () => request('/api/health');
 export const getScenarios = () => request('/api/scenarios');
 export const getNetwork = (scenario) => request(`/api/network?${qs({ scenario })}`);
 
+/** NetworkX graph analytics (degree, centrality, cut junctions, ambulance shortest paths). */
+export const getGraph = (scenario) => request(`/api/graph?${qs({ scenario })}`);
+
 /** Run the microscopic simulator. plan omitted = fixed-time 30 s baseline. */
 export const simulate = ({ scenario, seed = 42, plan = null, corridor = false, duty = 1 }) =>
   post('/api/simulate', { scenario, seed, plan, corridor, duty });

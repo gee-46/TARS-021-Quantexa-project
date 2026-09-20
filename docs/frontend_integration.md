@@ -22,6 +22,24 @@ The visual system (landing page, orb, layout, sidebar, network canvas, cards) is
 * Removed as unsupported by the simulator: accident and road-closure "events", the hospital node, GPS/telemetry wording, SUMO/IoT/QPU-ready claims and every hard-coded KPI.
 * Real-hardware IBM execution is **not reachable through the HTTP API** by design.
 
+## Map, NetworkX and Plotly
+
+The legacy Streamlit app in `traffic_optimization/` used Folium, NetworkX and Plotly. The React control center now has real counterparts:
+
+| Legacy | React control center | Notes |
+|---|---|---|
+| Folium map | **Corridor Map** page (`react-leaflet`; Folium itself wraps Leaflet) | OpenStreetMap basemap; junctions coloured by signal, links by queue load, corridor highlighted |
+| NetworkX graph | **Network Graph** page fed by `GET /api/graph` | Computed **server-side with the real `networkx`** (degree, betweenness, closeness, cut junctions, ambulance shortest paths) |
+| Plotly charts | `plotly.js-basic-dist-min` (`PlotlyChart`) on Traffic Network, Analytics, Comparison, Network Graph | Loaded on demand as a separate chunk |
+
+Honesty notes for the map:
+
+* Placement is **illustrative**. The API places the four junctions in a line (~0.85 km apart) near Belagavi's centre (`MAP_CENTRE` in `api_server.py`). They are not surveyed positions and do not match real junction locations; the map shows a banner saying so. Canonical scenarios say "no real place is modelled".
+* The legacy app's coordinates (12.97°N 77.59°E) are in Bangalore and are deliberately not reused.
+* `simulation/belagavi.py` keeps `lat`/`lon` empty; replace `illustrative_geo` with surveyed coordinates to calibrate.
+* The basemap tiles come from `tile.openstreetmap.org` (attribution shown). They need internet and are an external request; markers and links render without it. CARTO's free dark tiles were tried first and now require an API key, so they were not used.
+* On a 4-node arterial the graph is a path graph, so centrality is determined by position; the page says so.
+
 ## Running it
 
 ```bash
@@ -45,4 +63,4 @@ The Streamlit command center (`streamlit run streamlit_app.py`, loader first) re
 * The topology animation (moving dots) is decorative and does not encode data.
 * Preemption forces whole-junction green; turn phases are not modelled.
 * Scenario results are for a fixed seed (42); differences are indicative, not statistically established.
-* Two Google Fonts CSS imports remain (an external request at load time; offline the UI falls back to system fonts).
+* Two Google Fonts CSS imports and the OpenStreetMap tile server are external requests at load time; offline the UI falls back to system fonts and the map shows markers without a basemap.

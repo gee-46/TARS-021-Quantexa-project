@@ -1,6 +1,7 @@
 import React from 'react';
 import TrafficNetworkVisualizer from '../components/TrafficNetworkVisualizer';
 import IntersectionDetailModal from '../components/IntersectionDetailModal';
+import JunctionCharts from '../components/JunctionCharts';
 import { useTraffic } from '../context/TrafficContext';
 import { Network, CheckCircle2, RotateCcw, Cpu, Play } from 'lucide-react';
 
@@ -249,6 +250,8 @@ export default function TrafficNetworkPage() {
           </table>
         </div>
       </div>
+
+      <JunctionCharts />
     </div>
   );
 }

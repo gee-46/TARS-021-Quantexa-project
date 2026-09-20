@@ -11,6 +11,8 @@ import EventsPage from './pages/EventsPage';
 import AnalyticsPage from './pages/AnalyticsPage';
 import ClassicalComparisonPage from './pages/ClassicalComparisonPage';
 import ArchitecturePage from './pages/ArchitecturePage';
+import MapPage from './pages/MapPage';
+import GraphPage from './pages/GraphPage';
 
 function App() {
   return (
@@ -24,6 +26,8 @@ function App() {
           <Route element={<DashboardLayout />}>
             <Route path="/dashboard" element={<DashboardOverview />} />
             <Route path="/traffic" element={<TrafficNetworkPage />} />
+            <Route path="/map" element={<MapPage />} />
+            <Route path="/graph" element={<GraphPage />} />
             <Route path="/quantum" element={<QuantumOptimizerPage />} />
             <Route path="/emergency" element={<EmergencyCorridorPage />} />
             <Route path="/events" element={<EventsPage />} />

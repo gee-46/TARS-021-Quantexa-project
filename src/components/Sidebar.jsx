@@ -9,6 +9,8 @@ import {
   BarChart3,
   GitCompare,
   Layers,
+  Map,
+  Share2,
   Sparkles,
   Radio,
   ArrowLeft,
@@ -18,6 +20,8 @@ import { useTraffic } from '../context/TrafficContext';
 const navItems = [
   { path: '/dashboard', label: 'Overview', icon: LayoutDashboard },
   { path: '/traffic', label: 'Traffic Network', icon: Network },
+  { path: '/map', label: 'Corridor Map', icon: Map },
+  { path: '/graph', label: 'Network Graph', icon: Share2 },
   { path: '/quantum', label: 'Quantum Optimizer', icon: Cpu },
   { path: '/emergency', label: 'Emergency Corridor', icon: Siren },
   { path: '/events', label: 'Scenarios & Events', icon: AlertTriangle },

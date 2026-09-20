@@ -3,7 +3,7 @@ import { BarChart3, Scale, Timer } from 'lucide-react';
 import { useTraffic } from '../context/TrafficContext';
 import { getPareto, runAdaptive } from '../services/api';
 import { PageHeader, Panel, DataTable, Note, Btn, Stat, StatGrid, fmt } from '../components/ui';
-import { LineChart } from '../components/charts';
+import PlotlyChart, { PALETTE } from '../components/PlotlyChart';
 
 const COLORS = ['#00f5ff', '#a855f7', '#10b981', '#f59e0b'];
 
@@ -65,11 +65,35 @@ function ParetoPanel() {
                   </select>
                 </label>
               </div>
-              <LineChart
-                xLabel={xmode === 'cross' ? 'Cross-street person-delay (person-s)' : 'Total civilian person-delay (person-s)'}
-                yLabel="Mean ambulance response (s)"
-                series={[{ name: 'λ sweep (0 → 1)', color: '#a855f7', points: pts.map((p) => ({ x: p[xkey], y: p.mean_emergency_response_time, label: `λ=${p.lambda_param}: response ${fmt.n(p.mean_emergency_response_time, 0)} s, delay ${fmt.int(p[xkey])}` })) }]}
-                highlight={{ x: sel[xkey], y: sel.mean_emergency_response_time }}
+              <PlotlyChart
+                height={320}
+                data={[
+                  {
+                    type: 'scatter',
+                    mode: 'lines+markers+text',
+                    name: 'λ sweep (0 → 1)',
+                    x: pts.map((p) => p[xkey]),
+                    y: pts.map((p) => p.mean_emergency_response_time),
+                    text: pts.map((p) => `λ=${p.lambda_param}`),
+                    textposition: 'top center',
+                    line: { color: PALETTE.purple, width: 2 },
+                    marker: { size: 9, color: PALETTE.purple },
+                    hovertemplate: 'λ=%{text}<br>response %{y:.0f} s<br>delay %{x:,.0f} person-s<extra></extra>',
+                  },
+                  {
+                    type: 'scatter',
+                    mode: 'markers',
+                    name: 'selected λ',
+                    x: [sel[xkey]],
+                    y: [sel.mean_emergency_response_time],
+                    marker: { size: 18, color: 'rgba(0,0,0,0)', line: { color: '#ffffff', width: 2 } },
+                    hoverinfo: 'skip',
+                  },
+                ]}
+                layout={{
+                  xaxis: { title: { text: xmode === 'cross' ? 'Cross-street person-delay (person-s)' : 'Total civilian person-delay (person-s)' } },
+                  yaxis: { title: { text: 'Mean ambulance response (s)' } },
+                }}
               />
               <StatGrid>
                 <Stat label="Ambulance response" value={`${fmt.n(sel.mean_emergency_response_time, 0)} s`} sub={`${fmt.n(sel.mean_emergency_response_time - base.mean_emergency_response_time, 0)} s vs λ=0`} color="#10b981" />
@@ -141,11 +165,18 @@ function AdaptivePanel() {
           <Note>
             {data.replan_count} scheduled re-plans · QAOA solves {data.qaoa_executions} · SA fallbacks {data.sa_fallbacks}. The same seed and traffic feed both controllers.
           </Note>
-          <LineChart
-            xLabel="Simulation time (s)"
-            yLabel="Green duration (s)"
-            yDomain={[10, 50]}
-            series={junctions.map((j, i) => ({ name: j, color: COLORS[i % COLORS.length], points: data.events.map((e) => ({ x: e.simulation_time, y: e.signal_plan[j] })) }))}
+          <PlotlyChart
+            height={280}
+            data={junctions.map((j, i) => ({
+              type: 'scatter',
+              mode: 'lines+markers',
+              name: j,
+              x: data.events.map((e) => e.simulation_time),
+              y: data.events.map((e) => e.signal_plan[j]),
+              line: { color: COLORS[i % COLORS.length], width: 2, shape: 'hv' },
+              marker: { size: 7 },
+            }))}
+            layout={{ xaxis: { title: { text: 'Simulation time (s)' } }, yaxis: { title: { text: 'Green duration (s)' }, range: [10, 50] } }}
           />
           <DataTable
             columns={[
