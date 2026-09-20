@@ -29,30 +29,36 @@ function useStoryClock(total, active) {
 
 function Timeline({ model, t, seek }) {
   const { T } = model;
+  // captions use the run's real numbers: ambulance response / waiting with and without the corridor
+  const saved = model.respB - model.respA;
   const segs = [
-    { key: 'before', label: 'BEFORE', sub: `Ambulance response ${fmt.n(model.respB, 0)} s`, a: 0, b: T.beforeEnd, color: 'var(--red)' },
-    { key: 'opt', label: 'OPTIMISATION', sub: 'Corridor enabled, signals switch', a: T.beforeEnd, b: T.actEnd, color: 'var(--info)' },
-    { key: 'after', label: 'AFTER', sub: `Ambulance response ${fmt.n(model.respA, 0)} s`, a: T.actEnd, b: T.afterEnd, color: 'var(--green)' },
+    { key: 'before', label: 'BEFORE', line1: 'Congestion: ambulance delayed', line2: `Response ${fmt.n(model.respB, 0)} s, of which ${fmt.n(model.waitB, 0)} s waiting`, a: 0, b: T.beforeEnd, color: 'var(--red)', bg: 'var(--red-bg)' },
+    { key: 'opt', label: 'OPTIMISATION', line1: 'Emergency corridor activated', line2: 'Signals along the route switch to green', a: T.beforeEnd, b: T.actEnd, color: 'var(--info)', bg: 'var(--info-bg)' },
+    { key: 'after', label: 'AFTER', line1: 'Corridor clear: ambulance moves', line2: `Response ${fmt.n(model.respA, 0)} s${saved > 0 ? ` (${fmt.n(saved, 0)} s faster)` : ''}`, a: T.actEnd, b: T.afterEnd, color: 'var(--green)', bg: 'var(--green-bg)' },
   ];
   const span = T.afterEnd;
   const pos = Math.min(1, t / span) * 100;
   return (
     <div style={{ padding: '10px 14px 12px', borderTop: '1px solid var(--border)', background: 'var(--surface)' }}>
-      <div style={{ position: 'relative', display: 'flex', gap: 3 }}>
-        {segs.map((s) => {
-          const on = t >= s.a && t < s.b + (s.key === 'after' ? 99 : 0);
+      <div style={{ position: 'relative', display: 'flex', alignItems: 'stretch', gap: 0 }}>
+        {segs.map((s, i) => {
+          const on = t >= s.a && (s.key === 'after' ? true : t < s.b);
           return (
-            <button
-              key={s.key}
-              onClick={() => seek(s.a + 0.01)}
-              style={{ flex: (s.b - s.a) / span, minWidth: 120, textAlign: 'left', cursor: 'pointer', fontFamily: 'inherit', background: on ? 'var(--surface-2)' : 'var(--surface)', border: '1px solid var(--border)', borderTop: `4px solid ${s.color}`, borderRadius: 4, padding: '6px 10px' }}
-            >
-              <div style={{ fontSize: '0.72rem', fontWeight: 700, color: s.color, letterSpacing: '0.06em' }}>{s.label}</div>
-              <div style={{ fontSize: '0.72rem', color: 'var(--text-2)' }}>{s.sub}</div>
-            </button>
+            <React.Fragment key={s.key}>
+              {i > 0 && <div aria-hidden="true" style={{ display: 'flex', alignItems: 'center', padding: '0 6px', color: 'var(--muted)', fontSize: '1.1rem', fontWeight: 700 }}>→</div>}
+              <button
+                onClick={() => seek(s.a + 0.01)}
+                aria-current={on ? 'step' : undefined}
+                style={{ flex: (s.b - s.a) / span, minWidth: 150, textAlign: 'left', cursor: 'pointer', fontFamily: 'inherit', background: on ? s.bg : 'var(--surface)', border: `1px solid ${on ? s.color : 'var(--border)'}`, borderTop: `4px solid ${s.color}`, borderRadius: 4, padding: '6px 10px', opacity: on ? 1 : 0.78 }}
+              >
+                <div style={{ fontSize: '0.72rem', fontWeight: 700, color: s.color, letterSpacing: '0.06em' }}>{s.label}</div>
+                <div style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--text)' }}>{s.line1}</div>
+                <div style={{ fontSize: '0.72rem', color: 'var(--text-2)' }}>{s.line2}</div>
+              </button>
+            </React.Fragment>
           );
         })}
-        <div style={{ position: 'absolute', left: `${pos}%`, top: -4, bottom: -4, width: 2, background: 'var(--charcoal)', pointerEvents: 'none' }} />
+        <div style={{ position: 'absolute', left: `${pos}%`, top: -4, bottom: -4, width: 2, background: 'var(--charcoal)', pointerEvents: 'none', opacity: 0.55 }} />
       </div>
     </div>
   );

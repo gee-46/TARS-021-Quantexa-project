@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { ChevronDown, ChevronUp } from 'lucide-react';
 import { useTraffic } from '../context/TrafficContext';
 import { Panel, fmt } from './ui';
 
@@ -9,8 +10,10 @@ const meanResponse = (m) => {
 };
 
 // Operational metrics: the run shown vs the fixed 30 s baseline run. Every value is read from the simulator.
-export default function KpiCards() {
+// Presentation only: collapsed by default so it does not dominate the first screen; the numbers are unchanged.
+export default function KpiCards({ defaultOpen = false }) {
   const { metrics: m, baselineMetrics: b, loading, network } = useTraffic();
+  const [open, setOpen] = useState(defaultOpen);
 
   if (!m || !b) {
     return <Panel title="Operational metrics"><div style={{ color: 'var(--muted)', fontSize: '0.82rem' }}>{loading ? 'Running the simulator…' : 'No simulation data. Is the QuantumFlow API running?'}</div></Panel>;
@@ -30,30 +33,60 @@ export default function KpiCards() {
     rows.push({ id: 'amb', label: 'Ambulance response', unit: m.emergency_corridor_enabled ? 'corridor on' : 'no preemption', v: resp, base: meanResponse(b), lower: true, f: (x) => fmt.n(x, 0) });
   }
 
+  // the two figures shown while collapsed: waiting time, and the ambulance response when there is one (else throughput)
+  const summary = [rows.find((r) => r.id === 'wait'), rows.find((r) => r.id === 'amb') || rows.find((r) => r.id === 'thru')];
+  const Chevron = open ? ChevronUp : ChevronDown;
+
   return (
-    <Panel title="Operational metrics" right={<span style={{ fontSize: '0.7rem', color: 'var(--muted)' }}>vs fixed 30 s plan · simulated, seed 42</span>}>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: 10 }}>
-        {rows.map((r) => {
-          const diff = r.v - r.base;
-          const same = Math.abs(diff) < 1e-9;
-          const better = r.lower ? diff < 0 : diff > 0;
-          const tone = same ? 'var(--muted)' : better ? 'var(--green)' : 'var(--red)';
-          const delta = same ? 'no change' : r.absolute ? `${diff > 0 ? '+' : ''}${diff.toFixed(3)}` : fmt.pct(r.v, r.base);
-          return (
-            <div key={r.id} style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '8px 10px' }}>
-              <div style={{ fontSize: '0.7rem', color: 'var(--muted)', fontWeight: 600 }}>{r.label}</div>
-              <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginTop: 2 }}>
-                <span style={{ fontSize: '1.2rem', fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>{r.f(r.v)}</span>
-                <span style={{ fontSize: '0.68rem', color: 'var(--muted)' }}>{r.unit}</span>
-              </div>
-              <div style={{ fontSize: '0.7rem', display: 'flex', justifyContent: 'space-between', marginTop: 2 }}>
-                <span style={{ color: 'var(--muted)' }}>baseline {r.f(r.base)}</span>
-                <strong style={{ color: tone }}>{delta}</strong>
-              </div>
-            </div>
-          );
-        })}
-      </div>
+    <Panel
+      title="Operational metrics"
+      right={
+        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+          {!open && summary.map((r) => (
+            <span key={r.id} style={{ fontSize: '0.78rem', color: 'var(--text-2)' }}>
+              {r.label}: <strong style={{ color: 'var(--text)', fontVariantNumeric: 'tabular-nums' }}>{r.f(r.v)}</strong> <span style={{ color: 'var(--muted)' }}>{r.unit}</span>
+            </span>
+          ))}
+          <button
+            type="button"
+            onClick={() => setOpen(!open)}
+            aria-expanded={open}
+            aria-label={open ? 'Collapse operational metrics' : 'Expand operational metrics'}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontFamily: 'inherit', fontSize: '0.74rem', fontWeight: 600, padding: '3px 8px', cursor: 'pointer', background: 'var(--surface)', border: '1px solid var(--border-strong)', borderRadius: 4, color: 'var(--text)' }}
+          >
+            {open ? 'Collapse' : 'Expand'} <Chevron size={14} />
+          </button>
+        </div>
+      }
+      style={open ? undefined : { gap: 0 }}
+    >
+      {open && (
+        <>
+          <div style={{ fontSize: '0.7rem', color: 'var(--muted)', marginTop: -4 }}>vs fixed 30 s plan · simulated, seed 42</div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: 10 }}>
+            {rows.map((r) => {
+              const diff = r.v - r.base;
+              const same = Math.abs(diff) < 1e-9;
+              const better = r.lower ? diff < 0 : diff > 0;
+              const tone = same ? 'var(--muted)' : better ? 'var(--green)' : 'var(--red)';
+              const delta = same ? 'no change' : r.absolute ? `${diff > 0 ? '+' : ''}${diff.toFixed(3)}` : fmt.pct(r.v, r.base);
+              return (
+                <div key={r.id} style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '8px 10px' }}>
+                  <div style={{ fontSize: '0.7rem', color: 'var(--muted)', fontWeight: 600 }}>{r.label}</div>
+                  <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginTop: 2 }}>
+                    <span style={{ fontSize: '1.2rem', fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>{r.f(r.v)}</span>
+                    <span style={{ fontSize: '0.68rem', color: 'var(--muted)' }}>{r.unit}</span>
+                  </div>
+                  <div style={{ fontSize: '0.7rem', display: 'flex', justifyContent: 'space-between', marginTop: 2 }}>
+                    <span style={{ color: 'var(--muted)' }}>baseline {r.f(r.base)}</span>
+                    <strong style={{ color: tone }}>{delta}</strong>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </>
+      )}
     </Panel>
   );
 }
