@@ -3,8 +3,8 @@ import LetterGlitch from './LetterGlitch';
 import './QuantumLoader.css';
 
 // The QuantumFlow number-glitch loader (same visuals and timing as the Streamlit loader in
-// frontend/webthreads), shown once per browser session on first load.
-// Add ?loader=1 to the URL to replay it.
+// frontend/webthreads). It plays on every full page load; navigating inside the app does not
+// replay it. Add ?loader=0 to the URL to skip it while developing.
 
 const STAGES = [
   { time: 0, text: 'INITIALIZING QUANTUMFLOW', progress: 15 },
@@ -14,15 +14,9 @@ const STAGES = [
   { time: 2800, text: 'SYSTEM READY', progress: 100 },
 ];
 const DONE_AT = 3200;
-const KEY = 'qf_loader_seen';
 
 function shouldShow() {
-  try {
-    if (new URLSearchParams(window.location.search).get('loader') === '1') return true;
-    return sessionStorage.getItem(KEY) !== '1';
-  } catch {
-    return true;
-  }
+  return new URLSearchParams(window.location.search).get('loader') !== '0';
 }
 
 export default function QuantumLoader() {
@@ -34,16 +28,7 @@ export default function QuantumLoader() {
     if (!visible) return undefined;
     const ids = STAGES.slice(1).map((s, i) => setTimeout(() => setStageIdx(i + 1), s.time));
     ids.push(setTimeout(() => setFading(true), DONE_AT));
-    ids.push(
-      setTimeout(() => {
-        try {
-          sessionStorage.setItem(KEY, '1');
-        } catch {
-          /* storage unavailable: loader will simply show again next load */
-        }
-        setVisible(false);
-      }, DONE_AT + 500),
-    );
+    ids.push(setTimeout(() => setVisible(false), DONE_AT + 500));
     return () => ids.forEach(clearTimeout);
   }, [visible]);
 
