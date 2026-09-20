@@ -1,6 +1,0 @@
-{
-  "name": "Quantum Traffic Optimizer M4",
-  "description": "Quantum-enhanced traffic network simulator and emergency corridor dashboard with QAOA, QUBO optimization, emergency queue jumping, and environmental impact analytics.",
-  "requestFramePermissions": [],
-  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
-}

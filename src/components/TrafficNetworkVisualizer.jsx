@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useTraffic } from '../context/TrafficContext';
-import { Ambulance, AlertCircle, Sparkles, Navigation } from 'lucide-react';
+import { Ambulance, Sparkles, Navigation } from 'lucide-react';
 
 export default function TrafficNetworkVisualizer() {
   const {

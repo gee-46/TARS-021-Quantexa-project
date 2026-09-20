@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useTraffic } from '../context/TrafficContext';
-import { Cpu, Play, CheckCircle2, RotateCcw, Sparkles, ArrowRight, Activity, HelpCircle } from 'lucide-react';
+import { Cpu, Play, CheckCircle2, RotateCcw, ArrowRight, Activity, HelpCircle } from 'lucide-react';
 import QuboExplanationModal from './QuboExplanationModal';
 
 export default function OptimizationPipeline() {

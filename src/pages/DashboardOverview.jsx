@@ -4,13 +4,8 @@ import TrafficNetworkVisualizer from '../components/TrafficNetworkVisualizer';
 import IntersectionDetailModal from '../components/IntersectionDetailModal';
 import OptimizationPipeline from '../components/OptimizationPipeline';
 import EmergencyCorridorPanel from '../components/EmergencyCorridorPanel';
-import { useTraffic } from '../context/TrafficContext';
-import { Sparkles, AlertTriangle, Cpu, Siren } from 'lucide-react';
-import { Link } from 'react-router-dom';
 
 export default function DashboardOverview() {
-  const { activeEvents, isOptimized, emergencyCorridorActive } = useTraffic();
-
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', width: '100%' }}>
       {/* Top Section: KPI Cards */}

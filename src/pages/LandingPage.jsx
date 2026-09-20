@@ -1,61 +1,12 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef } from 'react';
+import { Link } from 'react-router-dom';
 import Orb from '../components/Orb.jsx';
 import AcidSquares from '../components/AcidSquares.jsx';
 import DepthText from '../components/DepthText.jsx';
 import VariableProximity from '../components/VariableProximity.jsx';
-import TopStatusBar from '../components/TopStatusBar.jsx';
-import DashboardOverview from './DashboardOverview.jsx';
-import TrafficNetworkPage from './TrafficNetworkPage.jsx';
-import QuantumOptimizerPage from './QuantumOptimizerPage.jsx';
-import EmergencyCorridorPage from './EmergencyCorridorPage.jsx';
-import EventsPage from './EventsPage.jsx';
-import AnalyticsPage from './AnalyticsPage.jsx';
-import ClassicalComparisonPage from './ClassicalComparisonPage.jsx';
-import ArchitecturePage from './ArchitecturePage.jsx';
-import MapPage from './MapPage.jsx';
-import GraphPage from './GraphPage.jsx';
-import {
-  ArrowDown,
-  ArrowUp,
-  Sparkles,
-  LayoutDashboard,
-  Network,
-  Cpu,
-  Siren,
-  AlertTriangle,
-  BarChart3,
-  GitCompare,
-  Layers,
-  Map,
-  Share2,
-} from 'lucide-react';
-
-const tabs = [
-  { id: 'overview', label: 'Command Overview', icon: LayoutDashboard, component: DashboardOverview },
-  { id: 'traffic', label: 'Traffic Network', icon: Network, component: TrafficNetworkPage },
-  { id: 'map', label: 'Corridor Map', icon: Map, component: MapPage },
-  { id: 'graph', label: 'Network Graph', icon: Share2, component: GraphPage },
-  { id: 'quantum', label: 'Quantum Optimizer', icon: Cpu, component: QuantumOptimizerPage },
-  { id: 'emergency', label: 'Emergency Corridor', icon: Siren, component: EmergencyCorridorPage },
-  { id: 'events', label: 'Scenarios & Events', icon: AlertTriangle, component: EventsPage },
-  { id: 'analytics', label: 'Analytics & Trade-offs', icon: BarChart3, component: AnalyticsPage },
-  { id: 'comparison', label: 'Solver Comparison', icon: GitCompare, component: ClassicalComparisonPage },
-  { id: 'architecture', label: 'System Architecture', icon: Layers, component: ArchitecturePage },
-];
 
 export default function LandingPage() {
   const contentContainerRef = useRef(null);
-  const [activeTab, setActiveTab] = useState('overview');
-
-  const scrollToControlCenter = () => {
-    document.getElementById('traffic-control-center')?.scrollIntoView({ behavior: 'smooth' });
-  };
-
-  const scrollToTop = () => {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
-
-  const ActiveComponent = tabs.find((t) => t.id === activeTab)?.component || DashboardOverview;
 
   return (
     <div style={{
@@ -202,176 +153,29 @@ export default function LandingPage() {
                 </div>
               </div>
 
-              {/* Primary Launcher CTA */}
+              {/* Entry point to the control center */}
               <div style={{ marginTop: '28px', pointerEvents: 'auto' }}>
-                <button
-                  onClick={scrollToControlCenter}
+                <Link
+                  to="/dashboard"
                   style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '10px',
-                    background: 'linear-gradient(135deg, #5227FF 0%, #A855F7 100%)',
+                    display: 'inline-block',
+                    background: '#5227FF',
                     color: '#ffffff',
-                    padding: '15px 30px',
-                    borderRadius: '12px',
-                    fontWeight: 800,
-                    fontSize: '0.95rem',
-                    letterSpacing: '0.04em',
-                    textTransform: 'uppercase',
-                    cursor: 'pointer',
-                    boxShadow: '0 0 32px rgba(168, 85, 247, 0.65), 0 4px 16px rgba(0, 0, 0, 0.5)',
-                    border: '1px solid rgba(255, 255, 255, 0.3)',
-                    transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.transform = 'translateY(-3px) scale(1.04)';
-                    e.currentTarget.style.boxShadow = '0 0 45px rgba(168, 85, 247, 0.9), 0 8px 24px rgba(0, 0, 0, 0.6)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.transform = 'translateY(0) scale(1)';
-                    e.currentTarget.style.boxShadow = '0 0 32px rgba(168, 85, 247, 0.65), 0 4px 16px rgba(0, 0, 0, 0.5)';
+                    padding: '12px 26px',
+                    borderRadius: '8px',
+                    fontWeight: 700,
+                    fontSize: '0.9rem',
+                    textDecoration: 'none',
                   }}
                 >
-                  <Sparkles size={18} />
-                  <span>LAUNCH TRAFFIC CONTROL CENTER</span>
-                  <ArrowDown size={18} />
-                </button>
+                  Open control center
+                </Link>
               </div>
 
             </div>
           </div>
         </div>
-
-        {/* Subtle Bottom Scroll Cue */}
-        <div
-          onClick={scrollToControlCenter}
-          style={{
-            position: 'absolute',
-            bottom: '24px',
-            left: '50%',
-            transform: 'translateX(-50%)',
-            zIndex: 10,
-            cursor: 'pointer',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            gap: '6px',
-            color: 'rgba(196, 181, 253, 0.7)',
-            fontSize: '0.72rem',
-            fontWeight: 700,
-            letterSpacing: '0.08em',
-            textTransform: 'uppercase',
-            animation: 'pulseSlow 2s infinite',
-          }}
-        >
-          <span>Scroll to the Control Center</span>
-          <ArrowDown size={16} color="#a855f7" />
-        </div>
       </section>
-
-      {/* ========================================================== */}
-      {/* SECTION 2: LIVE TRAFFIC CONTROL CENTER ON THE SAME PAGE    */}
-      {/* ========================================================== */}
-      <section
-        id="traffic-control-center"
-        style={{
-          width: '100vw',
-          minHeight: '100vh',
-          background: 'radial-gradient(ellipse at 50% 0%, rgba(20, 15, 45, 0.98) 0%, rgba(6, 5, 15, 0.99) 100%)',
-          borderTop: '1px solid rgba(139, 92, 246, 0.25)',
-          display: 'flex',
-          flexDirection: 'column',
-          position: 'relative',
-          zIndex: 20,
-        }}
-      >
-        {/* Control Center Status Bar */}
-        <TopStatusBar />
-
-        {/* Interactive Module Navigation Bar */}
-        <div style={{
-          background: 'rgba(12, 10, 26, 0.95)',
-          borderBottom: '1px solid rgba(139, 92, 246, 0.15)',
-          padding: '12px 24px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          overflowX: 'auto',
-          gap: '12px',
-          backdropFilter: 'blur(16px)',
-          position: 'sticky',
-          top: 0,
-          zIndex: 40,
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'nowrap' }}>
-            {tabs.map((tab) => {
-              const Icon = tab.icon;
-              const isActive = activeTab === tab.id;
-              return (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '8px',
-                    padding: '8px 14px',
-                    borderRadius: '8px',
-                    fontSize: '0.8rem',
-                    fontWeight: isActive ? 700 : 500,
-                    color: isActive ? '#ffffff' : 'rgba(216, 207, 247, 0.75)',
-                    background: isActive
-                      ? 'linear-gradient(90deg, rgba(82, 39, 255, 0.35) 0%, rgba(168, 85, 247, 0.25) 100%)'
-                      : 'rgba(255, 255, 255, 0.03)',
-                    border: isActive
-                      ? '1px solid rgba(168, 85, 247, 0.5)'
-                      : '1px solid rgba(139, 92, 246, 0.12)',
-                    cursor: 'pointer',
-                    whiteSpace: 'nowrap',
-                    transition: 'all 0.18s ease',
-                  }}
-                >
-                  <Icon size={15} color={isActive ? '#00f5ff' : '#a855f7'} />
-                  <span>{tab.label}</span>
-                </button>
-              );
-            })}
-          </div>
-
-          <button
-            onClick={scrollToTop}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              padding: '8px 14px',
-              borderRadius: '8px',
-              fontSize: '0.78rem',
-              fontWeight: 700,
-              color: '#c4b5fd',
-              background: 'rgba(82, 39, 255, 0.15)',
-              border: '1px solid rgba(168, 85, 247, 0.3)',
-              cursor: 'pointer',
-              whiteSpace: 'nowrap',
-            }}
-          >
-            <ArrowUp size={14} />
-            <span>Top Launcher</span>
-          </button>
-        </div>
-
-        {/* Dynamic Active Module Container */}
-        <div style={{
-          flex: 1,
-          padding: '24px',
-          maxWidth: '1600px',
-          width: '100%',
-          margin: '0 auto',
-        }}>
-          <ActiveComponent />
-        </div>
-      </section>
-
     </div>
   );
 }
