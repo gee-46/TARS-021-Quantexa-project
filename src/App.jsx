@@ -13,10 +13,12 @@ import ClassicalComparisonPage from './pages/ClassicalComparisonPage';
 import ArchitecturePage from './pages/ArchitecturePage';
 import MapPage from './pages/MapPage';
 import GraphPage from './pages/GraphPage';
+import QuantumLoader from './components/loader/QuantumLoader';
 
 function App() {
   return (
     <TrafficProvider>
+      <QuantumLoader />
       <BrowserRouter>
         <Routes>
           {/* Landing Experience (Preserved Visual System + CTA) */}

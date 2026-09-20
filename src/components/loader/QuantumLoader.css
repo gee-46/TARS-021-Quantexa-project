@@ -1,0 +1,169 @@
+.loader-root {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  min-height: 550px;
+  background: #000000;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden;
+  user-select: none;
+}
+
+.glitch-background {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+}
+
+.loader-overlay {
+  position: relative;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 2.25rem 2rem;
+  max-width: 600px;
+  width: 90%;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  background: rgba(5, 12, 10, 0.75);
+  border: 1px solid rgba(97, 220, 163, 0.3);
+  border-radius: 20px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8),
+              0 0 35px rgba(97, 220, 163, 0.15),
+              inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  animation: qflFloatIn 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes qflFloatIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.quantum-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  background: rgba(97, 220, 163, 0.12);
+  border: 1px solid rgba(97, 220, 163, 0.35);
+  border-radius: 100px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.15em;
+  color: #61dca3;
+  text-transform: uppercase;
+  margin-bottom: 1.25rem;
+  box-shadow: 0 0 15px rgba(97, 220, 163, 0.15);
+}
+
+.pulse-dot {
+  width: 6px;
+  height: 6px;
+  background-color: #61b3dc;
+  border-radius: 50%;
+  box-shadow: 0 0 8px #61b3dc;
+  animation: qflPulse 1.4s ease-in-out infinite;
+}
+
+@keyframes qflPulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.4);
+    opacity: 0.4;
+  }
+}
+
+.loader-title {
+  font-family: 'Outfit', sans-serif;
+  font-size: 2.75rem;
+  font-weight: 800;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  background: linear-gradient(135deg, #ffffff 0%, #e0f2fe 40%, #61dca3 70%, #61b3dc 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-shadow: 0 0 40px rgba(97, 220, 163, 0.4);
+  margin-bottom: 0.5rem;
+}
+
+.loader-subtitle {
+  font-family: 'Inter', sans-serif;
+  font-size: 0.8rem;
+  font-weight: 500;
+  letter-spacing: 0.18em;
+  color: #94a3b8;
+  text-transform: uppercase;
+  margin-bottom: 2rem;
+}
+
+.progress-container {
+  width: 100%;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 1.25rem;
+  position: relative;
+}
+
+.progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg, #2b4539 0%, #61dca3 50%, #61b3dc 100%);
+  border-radius: 4px;
+  transition: width 0.3s ease-out;
+  box-shadow: 0 0 12px rgba(97, 220, 163, 0.8);
+}
+
+.status-line {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.78rem;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  color: #61b3dc;
+  min-height: 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  text-transform: uppercase;
+  transition: all 0.2s ease;
+}
+
+.status-spinner {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border: 2px solid rgba(97, 179, 220, 0.2);
+  border-top-color: #61b3dc;
+  border-radius: 50%;
+  animation: qflSpin 0.8s linear infinite;
+}
+
+@keyframes qflSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.system-ready-check {
+  color: #61dca3;
+  font-weight: bold;
+}
