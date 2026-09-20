@@ -38,10 +38,6 @@ DIST = os.path.join(ROOT, "dist")
 FIXED_PLAN = {"I1": 30, "I2": 30, "I3": 30, "I4": 30}
 QUEUE_REFERENCE_VEHICLES = 40  # UI scale only: queue load % = queue / 40 (assumed, not measured)
 
-# Illustrative map placement (NOT surveyed). Belagavi city centre, junctions spaced ~0.85 km apart in a line.
-MAP_CENTRE = (15.8497, 74.4977)
-MAP_SPACING_DEG = 0.008
-
 app = FastAPI(title="QuantumFlow API", version="1.0")
 
 _cache: Dict[Tuple, Any] = {}
@@ -83,19 +79,43 @@ def node_label(scenario_id: str, node: str) -> str:
     return belagavi.junction_name(node) if is_belagavi_inspired(scenario_id) else f"Junction {node}"
 
 
-def illustrative_geo(scenario_id: str, ids: List[str]) -> Dict[str, Any]:
-    """Map placement for the Leaflet view. Always illustrative: no junction position here is surveyed."""
-    lat0, lon0 = MAP_CENTRE
-    mid = (len(ids) - 1) / 2
-    points = [{"id": n, "lat": lat0, "lon": round(lon0 + (i - mid) * MAP_SPACING_DEG, 5)} for i, n in enumerate(ids)]
+def map_geo(scenario_id: str, ids: List[str]) -> Dict[str, Any]:
+    """Map data for the Leaflet view: REAL OpenStreetMap locations and OSRM road geometry for Belagavi.
+
+    The simulator nodes I1..I4 are mapped onto four real places for display. Canonical scenarios are not
+    about Belagavi; they are drawn on the same corridor for display only.
+    """
+    geo = belagavi.load_geo()
+    places = geo["junctions"]
+    points = [
+        {"id": n, "lat": places[i]["lat"], "lon": places[i]["lon"], "place": places[i]["name"], "osm": places[i]["osm"]}
+        for i, n in enumerate(ids[: len(places)])
+    ]
+    legs = [
+        {"from": leg["from"], "to": leg["to"], "distance_m": leg["distance_m"], "geometry": leg["geometry"]}
+        for leg in geo["legs"]
+    ]
+    lats = [p["lat"] for p in points]
+    lons = [p["lon"] for p in points]
     if is_belagavi_inspired(scenario_id):
         note = (
-            "Illustrative placement near Belagavi's centre. Junction positions are NOT surveyed and do not match the real "
-            "junction locations; the labels are illustrative too."
+            "Junction locations and road geometry are real (OpenStreetMap). Which junctions form the corridor, the signal timings "
+            "and all traffic volumes are assumed; this is not a digital twin of Belagavi. 'Tilakwadi' is the suburb centroid."
         )
     else:
-        note = "Abstract corridor drawn at an arbitrary map location. No real place is modelled in this scenario."
-    return {"kind": "illustrative", "centre": {"lat": lat0, "lon": lon0}, "points": points, "note": note}
+        note = (
+            "Canonical scenario drawn on a real Belagavi corridor for display only: it does not model Belagavi. "
+            "Locations and road geometry are real (OpenStreetMap); traffic is simulated."
+        )
+    return {
+        "kind": "openstreetmap",
+        "centre": {"lat": sum(lats) / len(lats), "lon": sum(lons) / len(lons)},
+        "points": points,
+        "legs": legs,
+        "attribution": geo["attribution"],
+        "retrieved": geo["retrieved"],
+        "note": note,
+    }
 
 
 def traffic_state(sc: SimulationScenario) -> Dict[str, Dict[str, float]]:
@@ -224,7 +244,7 @@ def network(scenario: str) -> Dict[str, Any]:
         "ambulances": ambulances,
         "cycle_length": sc.cycle_length,
         "duration_seconds": sc.duration_seconds,
-        "geo": illustrative_geo(scenario, ids),
+        "geo": map_geo(scenario, ids),
         "fixed_plan": dict(FIXED_PLAN),
         "queue_reference_vehicles": QUEUE_REFERENCE_VEHICLES,
         "occupancy": {

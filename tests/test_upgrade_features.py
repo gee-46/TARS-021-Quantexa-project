@@ -234,7 +234,7 @@ def test_hardware_comparison_rejects_bad_sizes():
 
 # ------------------------------------------------------------------ Belagavi twin
 def test_belagavi_twin_scenarios_and_labels():
-    assert belagavi.junction_name("I3") == "RPD Cross"
+    assert belagavi.junction_name("I3") == "Tilak Chowk"
     assert belagavi.junction_name("ZZ") == "ZZ"
     assert "I4" in belagavi.label_route(("I4", "I3")) or "Tilakwadi" in belagavi.label_route(("I4", "I3"))
     for kind in ("normal", "peak", "peak_two_ambulances"):
@@ -249,6 +249,21 @@ def test_belagavi_twin_scenarios_and_labels():
 def test_belagavi_twin_carries_simulation_disclaimer():
     info = belagavi.describe()
     assert "not a validated model" in info["disclaimer"]
-    assert all(j["lat"] is None and j["lon"] is None for j in info["junctions"])  # no invented coordinates
+    assert all(15.80 < j["lat"] < 15.90 and 74.47 < j["lon"] < 74.55 and j["osm"] for j in info["junctions"])  # real OSM places in Belagavi
     m = TrafficSimulator(belagavi.belagavi_scenario("peak_two_ambulances"), enable_emergency_corridor=True).simulate(PLAN, seed=2)
     assert m.active_emergencies_count == 2
+
+
+def test_belagavi_geo_file_is_consistent_real_data():
+    import math
+
+    geo = belagavi.load_geo()
+    js = {j["node_id"]: j for j in geo["junctions"]}
+    assert list(js) == ["I1", "I2", "I3", "I4"] and "OpenStreetMap" in geo["attribution"]
+    for leg in geo["legs"]:
+        a, b = js[leg["from"]], js[leg["to"]]
+        # road route is at least as long as the straight line and starts/ends at the junctions (within snapping distance)
+        straight = 111_000 * math.hypot(a["lat"] - b["lat"], (a["lon"] - b["lon"]) * math.cos(math.radians(a["lat"])))
+        assert leg["distance_m"] >= 0.95 * straight
+        assert math.hypot(leg["geometry"][0][0] - a["lat"], leg["geometry"][0][1] - a["lon"]) < 0.002
+        assert math.hypot(leg["geometry"][-1][0] - b["lat"], leg["geometry"][-1][1] - b["lon"]) < 0.002

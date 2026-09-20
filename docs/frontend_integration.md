@@ -32,11 +32,12 @@ An earlier Streamlit map app (since removed from the repository) used Folium, Ne
 | NetworkX graph | **Network Graph** page fed by `GET /api/graph` | Computed **server-side with the real `networkx`** (degree, betweenness, closeness, cut junctions, ambulance shortest paths) |
 | Plotly charts | `plotly.js-basic-dist-min` (`PlotlyChart`) on Traffic Network, Analytics, Comparison, Network Graph | Loaded on demand as a separate chunk |
 
-Honesty notes for the map:
+Data and honesty notes for the map:
 
-* Placement is **illustrative**. The API places the four junctions in a line (~0.85 km apart) near Belagavi's centre (`MAP_CENTRE` in `api_server.py`). They are not surveyed positions and do not match real junction locations; the map shows a banner saying so. Canonical scenarios say "no real place is modelled".
-* The legacy app's coordinates (12.97°N 77.59°E) are in Bangalore and are deliberately not reused.
-* `simulation/belagavi.py` keeps `lat`/`lon` empty; replace `illustrative_geo` with surveyed coordinates to calibrate.
+* **Locations and roads are real.** `simulation/data/belagavi_geo.json` holds four OpenStreetMap places (Central Bus Stand `way/641195056`, Rani Chennamma Circle `way/321455352`, Tilak Chowk `node/2106608313`, Tilakwadi `node/6039044427`) and the driving-route geometry between consecutive ones (OSRM, ~1.4 km, ~1.4 km, ~2.8 km). It was fetched once by `examples/fetch_belagavi_geo.py` (Nominatim + OSRM public services, retrieval date and attribution stored in the file); the app never calls those services at runtime.
+* **Traffic is not real.** The simulator's I1-I4 nodes are mapped onto these places for display. Which junctions form the corridor, signal timings and all volumes are assumed; this is not a digital twin. 'Tilakwadi' is the suburb centroid, not a junction. "RPD Cross" was dropped because OpenStreetMap has no junction by that name.
+* Canonical scenarios (A-G) are drawn on the same corridor for display only, and the map says they do not model Belagavi.
+* The legacy app's coordinates (12.97°N 77.59°E) were in Bangalore and are not used.
 * The basemap tiles come from `tile.openstreetmap.org` (attribution shown). They need internet and are an external request; markers and links render without it. CARTO's free dark tiles were tried first and now require an API key, so they were not used.
 * On a 4-node arterial the graph is a path graph, so centrality is determined by position; the page says so.
 

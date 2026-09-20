@@ -34,7 +34,7 @@ def test_scenarios_listing_matches_registry():
     r = client.get("/api/scenarios").json()
     assert {s["id"] for s in r} == set(all_scenarios())
     belagavi = [s for s in r if s["belagavi_inspired"]]
-    assert belagavi and all("illustrative" in s["title"].lower() for s in belagavi)
+    assert belagavi and all("assumed demand" in s["title"].lower() for s in belagavi)
 
 
 def test_network_is_the_real_four_junction_arterial():
@@ -45,7 +45,7 @@ def test_network_is_the_real_four_junction_arterial():
     assert r["disclaimer"] is None  # canonical scenario: no Belagavi framing
     b = client.get("/api/network", params={"scenario": "belagavi_peak"}).json()
     assert "not a digital twin" in b["disclaimer"]
-    assert b["nodes"][2]["name"] == "RPD Cross"
+    assert [n["name"] for n in b["nodes"]] == ["Central Bus Stand", "Rani Chennamma Circle", "Tilak Chowk", "Tilakwadi"]
 
 
 def test_unknown_scenario_is_404():
@@ -142,14 +142,17 @@ def test_responses_are_strict_json():
     json.loads(r.text, parse_constant=lambda c: pytest.fail(f"non-standard JSON constant {c}"))
 
 
-def test_network_geo_is_labelled_illustrative_and_not_bangalore():
-    for sid, phrase in (("belagavi_peak", "NOT surveyed"), ("scenario_a_balanced", "No real place")):
+def test_network_geo_is_real_openstreetmap_data_near_belagavi():
+    for sid, phrase in (("belagavi_peak", "not a digital twin"), ("scenario_a_balanced", "does not model Belagavi")):
         geo = client.get("/api/network", params={"scenario": sid}).json()["geo"]
-        assert geo["kind"] == "illustrative" and phrase in geo["note"]
+        assert geo["kind"] == "openstreetmap" and phrase in geo["note"]
+        assert "OpenStreetMap" in geo["attribution"]
         assert [p["id"] for p in geo["points"]] == ["I1", "I2", "I3", "I4"]
-        assert all(15.0 < p["lat"] < 16.5 and 74.0 < p["lon"] < 75.0 for p in geo["points"])  # near Belagavi, not the old Bangalore coordinates
-        lons = [p["lon"] for p in geo["points"]]
-        assert lons == sorted(lons) and len(set(lons)) == 4
+        assert [p["place"] for p in geo["points"]] == ["Central Bus Stand", "Rani Chennamma Circle", "Tilak Chowk", "Tilakwadi"]
+        assert all(15.80 < p["lat"] < 15.90 and 74.47 < p["lon"] < 74.55 for p in geo["points"])  # Belagavi, not the old Bangalore coordinates
+        assert all(p["osm"].split("/")[0] in ("node", "way") for p in geo["points"])
+        assert [(leg["from"], leg["to"]) for leg in geo["legs"]] == [("I1", "I2"), ("I2", "I3"), ("I3", "I4")]
+        assert all(len(leg["geometry"]) > 10 for leg in geo["legs"])  # real road geometry, not a straight line
 
 
 def test_graph_endpoint_uses_networkx_and_reports_path_graph():

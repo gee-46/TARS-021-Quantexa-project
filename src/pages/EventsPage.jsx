@@ -38,7 +38,7 @@ export default function EventsPage() {
         />
         <Note tone="warn">
           Accidents, lane closures and reroutes are not modelled by the simulator, so they are not offered here. Heavy demand is scenario B/G, ambulances are D/E/F.
-          The “Belagavi-inspired” scenarios use assumed demand on an illustrative topology.
+          The “Belagavi-inspired” scenarios use assumed demand on real OpenStreetMap junction locations.
         </Note>
       </Panel>
 

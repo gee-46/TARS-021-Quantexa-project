@@ -31,5 +31,5 @@
 3. **Pareto assumptions**: Pareto results depend on the configured cross-street traffic assumption (`cross_street_rate`) and on the preemption-duty interpretation of lambda.
 4. **Classical simulation of QAOA**: QAOA is executed on Qiskit Aer. Ideal-vs-noisy simulation uses a generic noise model, not a calibrated device.
 5. **Real hardware unverified**: the IBM runtime path is implemented but has not been executed on a real account/device; no hardware results, timings or fidelities are reported anywhere.
-6. **Belagavi**: the Belagavi content is a Belagavi-inspired schematic / illustrative topology, not a digital twin.
+6. **Belagavi**: the Belagavi content is a Belagavi-inspired corridor, not a digital twin. Junction locations and road geometry are real OpenStreetMap data; the corridor choice, signal timings and traffic volumes are assumed.
 7. **No quantum advantage is claimed.**

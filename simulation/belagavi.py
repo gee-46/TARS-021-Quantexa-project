@@ -1,53 +1,70 @@
-"""Belagavi-inspired schematic / illustrative topology for the QuantumFlow arterial (NOT a digital twin).
+"""Belagavi-inspired corridor for the QuantumFlow arterial (NOT a digital twin).
 
-IMPORTANT - what this is and is not
------------------------------------
-This maps the four abstract simulator nodes (I1..I4) onto recognisable Belagavi junction
-*labels* so a demo reads as a place instead of "I1 -> I2 -> I3 -> I4". It is a schematic:
-
-* Junction names are illustrative labels chosen for presentation.
-* The order of junctions, distances, signal timings and traffic volumes are NOT measured
-  from Belagavi. Arrival rates are invented "plausible peak" numbers.
-* Nothing here validates the simulator against real traffic, and no result should be
+What is real and what is assumed
+--------------------------------
+* REAL: the four junction locations and the road geometry between them come from OpenStreetMap
+  (see ``simulation/data/belagavi_geo.json``, produced by ``examples/fetch_belagavi_geo.py``).
+* ASSUMED: which junctions form "the corridor", the signal timings, demand and every traffic volume.
+  Nothing here validates the simulator against real Belagavi traffic, and no result should be
   presented as a prediction for the real city.
-
-To turn this into a calibrated model, replace ``BELAGAVI_JUNCTIONS`` (and fill ``lat``/``lon``) with surveyed
-data and replace the demand numbers in ``belagavi_scenario`` with counted flows.
+* 'Tilakwadi' is the centroid of the suburb, not a single junction.
 """
 
 from dataclasses import dataclass
-from typing import Dict, Optional, Tuple
+import json
+import os
+from typing import Any, Dict, Optional, Tuple
 
 from simulation.models import VehicleTypeConfig
 from simulation.scenario import EmergencyVehicleConfig, SimulationScenario
 
 DISCLAIMER = (
-    "Belagavi-inspired schematic / illustrative topology - not a digital twin and not a validated model of Belagavi. "
-    "Junction names are illustrative labels; layout, distances, signal timings and traffic volumes are assumed, not measured."
+    "Belagavi-inspired corridor - not a digital twin and not a validated model of Belagavi. Junction locations are real "
+    "OpenStreetMap places, but which junctions form the corridor, signal timings and traffic volumes are assumed, not measured."
 )
+
+
+GEO_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "belagavi_geo.json")
+
+
+def load_geo() -> Dict[str, Any]:
+    """Real OpenStreetMap locations + road geometry (fetched once by examples/fetch_belagavi_geo.py)."""
+    with open(GEO_PATH, encoding="utf-8") as f:
+        return json.load(f)
 
 
 @dataclass(frozen=True)
 class Junction:
     node_id: str  # simulator node (I1..I4)
-    name: str  # display label
+    name: str  # real place name (OpenStreetMap)
     role: str  # what the node stands for in the story
-    lat: Optional[float] = None  # fill in from a survey to calibrate
+    lat: Optional[float] = None
     lon: Optional[float] = None
+    osm: Optional[str] = None  # OpenStreetMap object, e.g. "way/321455352"
 
 
-BELAGAVI_JUNCTIONS: Tuple[Junction, ...] = (
-    Junction("I1", "Central Bus Stand", "transit hub (bus-heavy entry)"),
-    Junction("I2", "Chennamma Circle", "city-centre circle"),
-    Junction("I3", "RPD Cross", "contested junction (both ambulance routes)"),
-    Junction("I4", "Tilakwadi", "eastern entry toward hospital belt"),
-)
+_ROLES = {
+    "I1": "transit hub (KSRTC bus station, bus-heavy entry)",
+    "I2": "city-centre roundabout",
+    "I3": "central junction (both ambulance routes cross here)",
+    "I4": "southern suburb, toward the hospital belt",
+}
+
+
+def _build_junctions() -> Tuple[Junction, ...]:
+    return tuple(
+        Junction(j["node_id"], j["name"], _ROLES.get(j["node_id"], ""), j["lat"], j["lon"], j["osm"])
+        for j in load_geo()["junctions"]
+    )
+
+
+BELAGAVI_JUNCTIONS: Tuple[Junction, ...] = _build_junctions()
 
 _NAMES: Dict[str, str] = {j.node_id: j.name for j in BELAGAVI_JUNCTIONS}
 
 
 def junction_name(node_id: str) -> str:
-    """Display label for a simulator node ('I3' -> 'RPD Cross')."""
+    """Display label for a simulator node ('I3' -> 'Tilak Chowk')."""
     return _NAMES.get(node_id, node_id)
 
 
@@ -95,11 +112,11 @@ def belagavi_scenario(kind: str = "peak_two_ambulances", duration_seconds: int =
 
 
 def describe() -> Dict[str, object]:
-    """Network description for the dashboard (schematic layout only)."""
+    """Network description for the dashboard: real OpenStreetMap junction locations, assumed traffic."""
     return {
         "disclaimer": DISCLAIMER,
         "junctions": [
-            {"node_id": j.node_id, "name": j.name, "role": j.role, "lat": j.lat, "lon": j.lon}
+            {"node_id": j.node_id, "name": j.name, "role": j.role, "lat": j.lat, "lon": j.lon, "osm": j.osm}
             for j in BELAGAVI_JUNCTIONS
         ],
         "corridor_order": [j.node_id for j in BELAGAVI_JUNCTIONS],

@@ -13,9 +13,9 @@ CANONICAL_TITLES = {
     "scenario_e_two_emergency_conflict": "E - Two conflicting ambulances",
     "scenario_f_three_emergency_conflict": "F - Three conflicting emergency vehicles",
     "scenario_g_adaptive_high_demand": "G - High-demand adaptive traffic",
-    "belagavi_normal": "Belagavi-inspired: normal (illustrative)",
-    "belagavi_peak": "Belagavi-inspired: peak (illustrative)",
-    "belagavi_peak_two_ambulances": "Belagavi-inspired: peak + two ambulances (illustrative)",
+    "belagavi_normal": "Belagavi-inspired: normal (assumed demand)",
+    "belagavi_peak": "Belagavi-inspired: peak (assumed demand)",
+    "belagavi_peak_two_ambulances": "Belagavi-inspired: peak + two ambulances (assumed demand)",
 }
 
 

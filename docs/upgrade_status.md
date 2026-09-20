@@ -14,7 +14,7 @@ Everything below is reproducible with `python -m pytest tests -q` and `streamlit
 | 5 | Solver arbiter: QAOA vs SA vs Greedy | Done; also for the conflict QUBO | `optimization/solver_arbiter.py`, `arbitrate_conflict` |
 | 6 | Pareto slider (ambulance vs civilians) | Done, **redesigned to be a real trade-off** | `optimization/pareto.py`, dashboard tab |
 | 7 | IBM hardware | Ideal-vs-noisy **simulation** verified; real-hardware path implemented but **unverified** (never run on a device) | `optimization/ibm_hardware.py` |
-| 8 | Belagavi-inspired schematic | Illustrative topology with disclaimer; **not** a digital twin | `simulation/belagavi.py` |
+| 8 | Belagavi-inspired corridor | Real OpenStreetMap locations + road geometry, assumed traffic; **not** a digital twin | `simulation/belagavi.py`, `simulation/data/belagavi_geo.json` |
 | - | Dashboard for all of the above | Done | `dashboard.py`, `streamlit_app.py` |
 
 ## Defects found and fixed while auditing the upgrade branch
@@ -52,7 +52,7 @@ Status: **implemented, documented, unverified.** Nothing contacts IBM unless `us
 
 * Preemption forces an *entire junction* green for the arterial; there are no per-phase turn movements.
 * The conflict sequencing uses a packed-slot wait model (slots are contiguous from the earliest arrival); it is a sequencing heuristic, not a full signal-timing optimiser.
-* The Belagavi content is a Belagavi-inspired schematic / illustrative topology, not a digital twin: junction names are illustrative, demand is assumed, coordinates are deliberately left empty, and no calibration or validation against real traffic has been done.
+* The Belagavi content is a Belagavi-inspired corridor, not a digital twin: junction locations and road geometry are real OpenStreetMap data, but the corridor choice, signal timings and all traffic volumes are assumed, and no calibration or validation against real traffic has been done.
 * Traffic volumes everywhere are simulated/assumed; none are backed by measured data.
 * Turn phases are not modelled.
 * Pareto results depend on the configured cross-street traffic assumption.

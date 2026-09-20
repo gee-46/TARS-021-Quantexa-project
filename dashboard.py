@@ -2,7 +2,7 @@
 
 Tabs: adaptive control, people & fairness, ambulances (conflict QUBO + arbiter), solver arbiter,
 Pareto slider, ideal-vs-noisy simulator comparison (real IBM hardware is opt-in and unverified),
-Belagavi-inspired illustrative schematic.
+Belagavi-inspired corridor (real OpenStreetMap locations, assumed traffic).
 
 Every number shown is computed from a simulation or solver run in this session; nothing is
 hard-coded. All QAOA runs use the local Qiskit Aer simulator unless the user explicitly opts in to real hardware.
@@ -369,18 +369,18 @@ def _tab_hardware(sc: SimulationScenario, seed: int, use_names: bool) -> None:
 
 
 def _tab_twin(sc: SimulationScenario) -> None:
-    st.subheader("Belagavi-inspired schematic / illustrative topology")
+    st.subheader("Belagavi-inspired corridor (real OpenStreetMap locations, assumed traffic)")
     info = belagavi.describe()
     st.warning(info["disclaimer"])
-    df = pd.DataFrame(info["junctions"])[["node_id", "name", "role"]]
-    st.dataframe(df.rename(columns={"node_id": "Node", "name": "Junction label (illustrative)", "role": "Role in the story"}), width="stretch", hide_index=True)
+    df = pd.DataFrame(info["junctions"])[["node_id", "name", "lat", "lon", "osm", "role"]]
+    st.dataframe(df.rename(columns={"node_id": "Node", "name": "Place (OpenStreetMap)", "lat": "Lat", "lon": "Lon", "osm": "OSM object", "role": "Role in the story"}), width="stretch", hide_index=True)
     order = info["corridor_order"]
     pos = pd.DataFrame({"x": range(len(order)), "y": [0] * len(order), "label": [f"{belagavi.junction_name(n)}\n({n})" for n in order]})
     line = alt.Chart(pos).mark_line(color="#888").encode(x=alt.X("x:Q", axis=None), y=alt.Y("y:Q", axis=None))
     dots = alt.Chart(pos).mark_circle(size=400).encode(x="x:Q", y="y:Q")
     text = alt.Chart(pos).mark_text(dy=-28).encode(x="x:Q", y="y:Q", text="label:N")
     st.altair_chart((line + dots + text).properties(height=140), width="stretch")
-    st.caption("Layout is a straight arterial because the simulator is one-dimensional; real geometry is not represented.")
+    st.caption("Schematic order only; the React control center draws the real road geometry on an OpenStreetMap map. Tilakwadi is a suburb centroid.")
 
 
 # --------------------------------------------------------------------------- entry
@@ -398,7 +398,7 @@ def render_dashboard() -> None:
         st.caption("React control center: `python -m uvicorn api_server:app --port 8000`, then open http://127.0.0.1:8000")
     sc = scenarios[key]
 
-    tabs = st.tabs(["Adaptive", "People & fairness", "Ambulances", "Solver arbiter", "Pareto slider", "Noise & hardware", "Belagavi schematic"])
+    tabs = st.tabs(["Adaptive", "People & fairness", "Ambulances", "Solver arbiter", "Pareto slider", "Noise & hardware", "Belagavi corridor"])
     with tabs[0]:
         _tab_adaptive(sc, int(seed), use_names)
     with tabs[1]:

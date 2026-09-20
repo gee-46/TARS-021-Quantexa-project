@@ -385,7 +385,7 @@ TARS-021-Quantexa-project/
 ├── optimization/                             # QUBO builder, Ising mapping, QAOA/SA/Greedy solvers, arbiter,
 │                                             #   emergency-conflict QUBO, Pareto, hardware (ideal/noisy/IBM opt-in)
 ├── simulation/                               # Microscopic simulator, adaptive & emergency controllers, scenarios,
-│                                             #   metrics, emissions, Belagavi-inspired schematic, scenario registry
+│                                             #   metrics, emissions, Belagavi-inspired corridor data, scenario registry
 ├── tests/                                    # pytest suite (solvers, simulator, controllers, API)
 ├── src/, public/, index.html, vite.config.js # React control center (Vite): pages, components, services
 └── frontend/webthreads/                      # Streamlit number-glitch loader component
@@ -453,6 +453,6 @@ See [docs/upgrade_status.md](docs/upgrade_status.md) for the eight upgrades, the
 
 - **QAOA runs on the local Qiskit Aer simulator.** Ideal-vs-noisy *simulation* is available (generic noise model, not a calibrated device).
 - **Real IBM hardware is optional future validation.** The runtime path (`optimization/ibm_hardware.py`) is implemented and documented but **unverified** until a run on an actual IBM account/device succeeds. No hardware timings, fidelities or results exist in this repository.
-- **The Belagavi content is a "Belagavi-inspired schematic / illustrative topology"**, not a digital twin: junction labels are illustrative and traffic volumes are assumed.
+- **The Belagavi content is a "Belagavi-inspired corridor", not a digital twin.** The four junction locations and the road geometry between them are real OpenStreetMap data (`simulation/data/belagavi_geo.json`, refreshed with `examples/fetch_belagavi_geo.py`); which junctions form the corridor, signal timings and all traffic volumes are assumed. Tilakwadi is a suburb centroid.
 - **No quantum advantage is claimed.**
 - **Results:** `results/benchmark_results*.json` are regenerated with `python examples/generate_results.py` (see [results/README.md](results/README.md)); all are simulator results.
