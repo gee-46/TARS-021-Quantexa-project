@@ -18,16 +18,16 @@ const STAGES = [
 export default function ArchitecturePage() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '22px', width: '100%' }}>
-      <PageHeader icon={<Layers size={24} color="#38bdf8" />} title="SYSTEM ARCHITECTURE" subtitle="What is implemented, module by module." />
+      <PageHeader icon={<Layers size={24} color="#1f6fd1" />} title="SYSTEM ARCHITECTURE" subtitle="What is implemented, module by module." />
       <Panel>
         {STAGES.map((s, i) => (
           <React.Fragment key={s.t}>
-            <div style={{ background: 'rgba(0,0,0,.3)', border: '1px solid rgba(139,92,246,.18)', borderRadius: '10px', padding: '12px 14px' }}>
+            <div style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: '10px', padding: '12px 14px' }}>
               <div style={{ fontWeight: 800, color: '#fff', fontSize: '0.9rem' }}>{s.t}</div>
-              <div style={{ fontSize: '0.78rem', color: 'rgba(226,232,240,.88)', margin: '4px 0', lineHeight: 1.5 }}>{s.d}</div>
+              <div style={{ fontSize: '0.78rem', color: 'var(--text)', margin: '4px 0', lineHeight: 1.5 }}>{s.d}</div>
               <code style={{ fontSize: '0.7rem', color: '#7dd3fc' }}>{s.m}</code>
             </div>
-            {i < STAGES.length - 1 && <ArrowDown size={16} color="rgba(139,92,246,.6)" style={{ alignSelf: 'center' }} />}
+            {i < STAGES.length - 1 && <ArrowDown size={16} color="#8b949e" style={{ alignSelf: 'center' }} />}
           </React.Fragment>
         ))}
       </Panel>

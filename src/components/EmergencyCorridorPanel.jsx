@@ -15,10 +15,9 @@ export default function EmergencyCorridorPanel() {
 
   return (
     <Panel
-      title="EMERGENCY GREEN CORRIDOR"
-      icon={<Ambulance size={20} color="#ef4444" />}
-      right={emergencyCorridorActive && <span style={{ color: '#ef4444', fontWeight: 800, fontSize: '0.72rem' }}>● PREEMPTION ON (simulated)</span>}
-      style={emergencyCorridorActive ? { border: '1px solid rgba(239, 68, 68, 0.5)' } : undefined}
+      title="Emergency green corridor"
+      icon={<Ambulance size={15} />}
+      right={emergencyCorridorActive && <strong style={{ color: 'var(--green)', fontSize: '0.72rem' }}>● CORRIDOR ENABLED (simulated)</strong>}
     >
       {!hasAmbulances ? (
         <Note tone="warn">This scenario has no emergency vehicle. Choose scenario D, E, F or a Belagavi-inspired two-ambulance scenario in the header.</Note>
@@ -32,37 +31,35 @@ export default function EmergencyCorridorPanel() {
                 key: 'route',
                 label: 'Route',
                 render: (r) => (
-                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
                     {r.a.route.map((n, i) => (
                       <React.Fragment key={n}>
-                        {i > 0 && <ArrowRight size={11} color="rgba(139,92,246,.6)" />}
-                        <span style={{ color: emergencyCorridorActive ? '#6ee7b7' : '#c4b5fd' }}>{n}</span>
+                        {i > 0 && <ArrowRight size={11} color="var(--muted)" />}
+                        <span style={{ fontWeight: 600, color: emergencyCorridorActive ? 'var(--green)' : 'var(--text)' }}>{n}</span>
                       </React.Fragment>
                     ))}
                   </span>
                 ),
               },
-              { key: 'off', label: 'Response, no corridor', render: (r) => (r.off === null || r.off === undefined ? '—' : `${fmt.n(r.off, 0)} s`) },
-              { key: 'on', label: 'Response, corridor', render: (r) => (r.on === undefined ? 'not run yet' : r.on === null ? 'unfinished' : <strong style={{ color: '#6ee7b7' }}>{fmt.n(r.on, 0)} s</strong>) },
+              { key: 'off', label: 'No corridor', render: (r) => (r.off === null || r.off === undefined ? '—' : <span style={{ color: 'var(--red)', fontWeight: 600 }}>{fmt.n(r.off, 0)} s</span>) },
+              { key: 'on', label: 'Corridor', render: (r) => (r.on === undefined ? 'not run yet' : r.on === null ? 'unfinished' : <strong style={{ color: 'var(--green)' }}>{fmt.n(r.on, 0)} s</strong>) },
             ]}
             rows={rows}
           />
-          <div style={{ display: 'flex', gap: '10px' }}>
+          <div style={{ display: 'flex', gap: 8 }}>
             {!emergencyCorridorActive ? (
-              <Btn onClick={handleActivateCorridor} disabled={emergencyBusy}>
-                <Zap size={16} />
-                {emergencyBusy ? 'Simulating…' : 'SIMULATE GREEN CORRIDOR'}
+              <Btn onClick={handleActivateCorridor} disabled={emergencyBusy} tone="ok">
+                <Zap size={14} />
+                {emergencyBusy ? 'Simulating…' : 'Simulate green corridor'}
               </Btn>
             ) : (
               <Btn onClick={handleRestoreTraffic} tone="ghost">
-                <RotateCcw size={16} />
-                SHOW WITHOUT CORRIDOR
+                <RotateCcw size={14} />
+                Show without corridor
               </Btn>
             )}
           </div>
-          <div style={{ fontSize: '0.68rem', color: 'rgba(167, 139, 250, 0.65)' }}>
-            Preemption forces the whole junction green; turn phases are not modelled. Times are simulated seconds.
-          </div>
+          <div style={{ fontSize: '0.7rem', color: 'var(--muted)' }}>Preemption forces the whole junction green; turn phases are not modelled. Times are simulated seconds.</div>
         </>
       )}
     </Panel>

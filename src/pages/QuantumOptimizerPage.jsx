@@ -36,7 +36,7 @@ export default function QuantumOptimizerPage() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '22px', width: '100%' }}>
       <PageHeader
-        icon={<Cpu size={24} color="#a855f7" />}
+        icon={<Cpu size={24} color="#2a2f36" />}
         title="QUBO OPTIMISATION ENGINE"
         subtitle="Signal timing as a 12-variable QUBO, solved with QAOA (Qiskit Aer simulator), simulated annealing and a greedy baseline."
         right={
@@ -52,14 +52,14 @@ export default function QuantumOptimizerPage() {
 
       {r && (
         <>
-          <Panel title="SOLVER COMPARISON — SAME QUBO" icon={<Zap size={18} color="#00f5ff" />}>
+          <Panel title="SOLVER COMPARISON — SAME QUBO" icon={<Zap size={18} color="#1f6fd1" />}>
             <DataTable
               columns={[
                 { key: 'solver', label: 'Solver', render: (c) => <strong>{c.solver_name.toUpperCase()}{c.solver_name === r.best_solver ? ' ★' : ''}</strong> },
                 { key: 'energy', label: 'QUBO energy (lower = better)', render: (c) => fmt.n(c.qubo_energy, 3) },
                 { key: 'rt', label: 'Runtime', render: (c) => `${fmt.n(c.runtime_seconds, 3)} s` },
                 { key: 'feas', label: 'Feasible', render: (c) => (c.is_feasible ? 'yes' : 'no') },
-                { key: 'plan', label: 'Plan', render: (c) => <code style={{ color: '#c4b5fd' }}>{planText(c.signal_plan)}</code> },
+                { key: 'plan', label: 'Plan', render: (c) => <code style={{ color: 'var(--text-2)' }}>{planText(c.signal_plan)}</code> },
               ]}
               rows={cands.map((c) => ({ id: c.solver_name, ...c }))}
             />
@@ -68,7 +68,7 @@ export default function QuantumOptimizerPage() {
             </Note>
           </Panel>
 
-          <Panel title="WHAT THE PLAN DOES IN THE SIMULATOR" icon={<Activity size={18} color="#10b981" />}>
+          <Panel title="WHAT THE PLAN DOES IN THE SIMULATOR" icon={<Activity size={18} color="#1b7f3a" />}>
             <StatGrid>
               <Stat label="Avg wait (s/veh)" value={`${fmt.n(b.average_waiting_time)} → ${fmt.n(o.average_waiting_time)}`} sub="fixed 30 s → solver plan" />
               <Stat label="Person-delay" value={`${fmt.int(b.total_person_delay)} → ${fmt.int(o.total_person_delay)}`} />
@@ -82,7 +82,7 @@ export default function QuantumOptimizerPage() {
       )}
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
-        <Panel title="QUBO TERMS" icon={<Layers size={18} color="#a855f7" />}>
+        <Panel title="QUBO TERMS" icon={<Layers size={18} color="#2a2f36" />}>
           {r ? (
             <StatGrid min={120}>
               {Object.entries(r.qubo.weights).map(([k, v]) => (
@@ -90,14 +90,14 @@ export default function QuantumOptimizerPage() {
               ))}
             </StatGrid>
           ) : (
-            <div style={{ color: 'rgba(196,181,253,.7)', fontSize: '0.8rem' }}>Weights appear after a run.</div>
+            <div style={{ color: 'var(--muted)', fontSize: '0.8rem' }}>Weights appear after a run.</div>
           )}
-          <div style={{ fontSize: '0.74rem', color: 'rgba(196,181,253,.8)', lineHeight: 1.5 }}>
+          <div style={{ fontSize: '0.74rem', color: 'var(--muted)', lineHeight: 1.5 }}>
             Each junction picks exactly one green duration from {'{15, 30, 45}'} s (one-hot). The objective weighs queue waiting, capacity pressure, throughput and upstream/downstream coupling.
           </div>
         </Panel>
 
-        <Panel title="IDEAL vs NOISY SIMULATION" icon={<Zap size={18} color="#f59e0b" />}>
+        <Panel title="IDEAL vs NOISY SIMULATION" icon={<Zap size={18} color="#b26a00" />}>
           {!canNoise ? (
             <Note>Needs a scenario with two ambulances (E, F or Belagavi-inspired two-ambulance): the circuit is the conflict QUBO.</Note>
           ) : (

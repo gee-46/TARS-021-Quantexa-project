@@ -7,15 +7,15 @@ import React, { useEffect, useRef } from 'react';
 const BASE_LAYOUT = {
   paper_bgcolor: 'rgba(0,0,0,0)',
   plot_bgcolor: 'rgba(0,0,0,0)',
-  font: { family: 'Inter, system-ui, sans-serif', color: '#94a3b8', size: 11 },
+  font: { family: 'Segoe UI, system-ui, sans-serif', color: '#4a5560', size: 11 },
   margin: { l: 56, r: 16, t: 28, b: 46 },
-  hoverlabel: { bgcolor: '#0f172a', font: { color: '#f8fafc' }, bordercolor: 'rgba(255,255,255,0.15)' },
+  hoverlabel: { bgcolor: '#ffffff', font: { color: '#1c2229' }, bordercolor: '#aeb5bd' },
   legend: { orientation: 'h', y: 1.15, x: 1, xanchor: 'right', font: { size: 10 } },
-  xaxis: { gridcolor: 'rgba(255,255,255,0.07)', zerolinecolor: 'rgba(255,255,255,0.15)' },
-  yaxis: { gridcolor: 'rgba(255,255,255,0.07)', zerolinecolor: 'rgba(255,255,255,0.15)' },
+  xaxis: { gridcolor: 'rgba(0,0,0,0.08)', zerolinecolor: 'rgba(0,0,0,0.3)' },
+  yaxis: { gridcolor: 'rgba(0,0,0,0.08)', zerolinecolor: 'rgba(0,0,0,0.3)' },
 };
 
-export const PALETTE = { cyan: '#38bdf8', green: '#4edea3', red: '#f87171', amber: '#fbbf24', purple: '#a78bfa', indigo: '#6366f1' };
+export const PALETTE = { cyan: '#1f6fd1', green: '#1b7f3a', red: '#c62828', amber: '#e0a100', purple: '#2a2f36', indigo: '#8b949e' };
 
 export default function PlotlyChart({ data, layout = {}, height = 300 }) {
   const ref = useRef(null);

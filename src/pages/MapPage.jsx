@@ -5,8 +5,8 @@ import { Map as MapIcon } from 'lucide-react';
 import { useTraffic } from '../context/TrafficContext';
 import { PageHeader, Panel, Note } from '../components/ui';
 
-const signalColor = (s) => (s === 'GREEN' ? '#4edea3' : s === 'YELLOW' ? '#ffd700' : '#ef4444');
-const loadColor = (load) => (load > 85 ? '#ef4444' : load > 55 ? '#f59e0b' : '#38bdf8');
+const signalColor = (s) => (s === 'GREEN' ? '#4edea3' : s === 'YELLOW' ? '#ffd700' : '#c62828');
+const loadColor = (load) => (load > 85 ? '#c62828' : load > 55 ? '#b26a00' : '#1f6fd1');
 
 // Leaflet map (the JS counterpart of the folium map in the legacy Streamlit app).
 // Junction positions and road geometry are REAL OpenStreetMap data served by the API (fetched once, see
@@ -18,7 +18,7 @@ export default function MapPage() {
   if (!geo) {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: '22px' }}>
-        <PageHeader icon={<MapIcon size={24} color="#38bdf8" />} title="CORRIDOR MAP" subtitle="Waiting for the network from the API…" />
+        <PageHeader icon={<MapIcon size={24} color="#1f6fd1" />} title="CORRIDOR MAP" subtitle="Waiting for the network from the API…" />
       </div>
     );
   }
@@ -34,7 +34,7 @@ export default function MapPage() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '22px', width: '100%' }}>
       <PageHeader
-        icon={<MapIcon size={24} color="#38bdf8" />}
+        icon={<MapIcon size={24} color="#1f6fd1" />}
         title="CORRIDOR MAP"
         subtitle="Real Belagavi locations and roads (OpenStreetMap); junctions coloured by their simulated signal, road legs by upstream queue load."
       />
@@ -42,8 +42,8 @@ export default function MapPage() {
         <strong>Real locations, simulated traffic.</strong> {geo.note}
       </Note>
       <Panel style={{ padding: '12px' }}>
-        <div className="dark-osm" style={{ height: '520px', borderRadius: '10px', overflow: 'hidden' }}>
-          <MapContainer key={scenarioId} bounds={bounds} boundsOptions={{ padding: [60, 60] }} scrollWheelZoom={false} style={{ height: '100%', width: '100%', background: '#0b1020' }}>
+        <div style={{ height: '520px', borderRadius: '10px', overflow: 'hidden' }}>
+          <MapContainer key={scenarioId} bounds={bounds} boundsOptions={{ padding: [60, 60] }} scrollWheelZoom={false} style={{ height: '100%', width: '100%', background: '#e6e9e4' }}>
             <TileLayer
               url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
               attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
@@ -88,7 +88,7 @@ export default function MapPage() {
             })}
           </MapContainer>
         </div>
-        <div style={{ fontSize: '0.68rem', color: 'rgba(167, 139, 250, 0.65)', padding: '8px 4px 0' }}>
+        <div style={{ fontSize: '0.68rem', color: 'var(--muted)', padding: '8px 4px 0' }}>
           {geo.attribution} Retrieved {geo.retrieved}. Basemap tiles come from OpenStreetMap and need an internet connection; markers and roads are drawn without it.
           Queue and signal values are simulated (the signal colour follows the simulator's cyclic rule on a looping model clock).
         </div>

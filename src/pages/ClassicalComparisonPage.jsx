@@ -4,7 +4,7 @@ import { useTraffic } from '../context/TrafficContext';
 import { PageHeader, Panel, DataTable, Note, Btn, fmt } from '../components/ui';
 import PlotlyChart from '../components/PlotlyChart';
 
-const COLOR = { qaoa: '#a855f7', sa: '#00f5ff', greedy: '#f59e0b' };
+const COLOR = { qaoa: '#2a2f36', sa: '#1f6fd1', greedy: '#b26a00' };
 const planText = (p) => Object.entries(p || {}).map(([k, v]) => `${k}:${v}s`).join('  ');
 
 export default function ClassicalComparisonPage() {
@@ -23,7 +23,7 @@ export default function ClassicalComparisonPage() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '22px', width: '100%' }}>
       <PageHeader
-        icon={<GitCompare size={24} color="#a855f7" />}
+        icon={<GitCompare size={24} color="#2a2f36" />}
         title="SOLVER COMPARISON"
         subtitle="QAOA (Aer simulator) vs simulated annealing vs greedy on the identical QUBO — reported as computed, including when QAOA does not win."
         right={<Btn onClick={handleRunOptimization} disabled={isOptimizing}><Cpu size={15} />{isOptimizing ? 'Solving…' : 'Run comparison'}</Btn>}
@@ -42,7 +42,7 @@ export default function ClassicalComparisonPage() {
                   orientation: 'h',
                   x: cands.map((c) => c.qubo_energy),
                   y: cands.map((c) => c.solver_name.toUpperCase()),
-                  marker: { color: cands.map((c) => COLOR[c.solver_name] || '#94a3b8') },
+                  marker: { color: cands.map((c) => COLOR[c.solver_name] || 'var(--text-2)') },
                   text: cands.map((c) => c.qubo_energy.toFixed(2)),
                   textposition: 'auto',
                   hovertemplate: '%{y}: energy %{x:.3f}<extra></extra>',
@@ -56,7 +56,7 @@ export default function ClassicalComparisonPage() {
                 { key: 'e', label: 'Energy', render: (c) => fmt.n(c.qubo_energy, 3) },
                 { key: 't', label: 'Runtime', render: (c) => `${fmt.n(c.runtime_seconds, 4)} s` },
                 { key: 'f', label: 'Feasible', render: (c) => (c.is_feasible ? 'yes' : 'no') },
-                { key: 'p', label: 'Plan', render: (c) => <code style={{ color: '#c4b5fd' }}>{planText(c.signal_plan)}</code> },
+                { key: 'p', label: 'Plan', render: (c) => <code style={{ color: 'var(--text-2)' }}>{planText(c.signal_plan)}</code> },
               ]}
               rows={cands.map((c) => ({ id: c.solver_name, ...c }))}
             />
@@ -69,7 +69,7 @@ export default function ClassicalComparisonPage() {
                 { key: 'label', label: 'Metric' },
                 { key: 'base', label: 'Fixed 30 s' },
                 { key: 'opt', label: `Solver plan (${r.best_solver.toUpperCase()})` },
-                { key: 'diff', label: 'Result', render: (x) => <span style={{ color: x.diff === 'better' ? '#10b981' : x.diff === 'worse' ? '#ef4444' : '#94a3b8', fontWeight: 700 }}>{x.diff}</span> },
+                { key: 'diff', label: 'Result', render: (x) => <span style={{ color: x.diff === 'better' ? '#1b7f3a' : x.diff === 'worse' ? '#c62828' : 'var(--text-2)', fontWeight: 700 }}>{x.diff}</span> },
               ]}
               rows={[
                 row('Average wait (s / vehicle)', 'average_waiting_time', 1, true),

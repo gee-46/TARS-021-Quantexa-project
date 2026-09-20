@@ -1,9 +1,8 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { TrafficProvider } from './context/TrafficContext';
-import LandingPage from './pages/LandingPage';
 import DashboardLayout from './components/DashboardLayout';
-import DashboardOverview from './pages/DashboardOverview';
+import LiveTrafficPage from './pages/LiveTrafficPage';
 import TrafficNetworkPage from './pages/TrafficNetworkPage';
 import QuantumOptimizerPage from './pages/QuantumOptimizerPage';
 import EmergencyCorridorPage from './pages/EmergencyCorridorPage';
@@ -21,12 +20,10 @@ function App() {
       <QuantumLoader />
       <BrowserRouter>
         <Routes>
-          {/* Landing Experience (Preserved Visual System + CTA) */}
-          <Route path="/" element={<LandingPage />} />
-
-          {/* Traffic Control Center Application */}
+          {/* Urban Traffic Operations Center: the live traffic scenario is the front page */}
           <Route element={<DashboardLayout />}>
-            <Route path="/dashboard" element={<DashboardOverview />} />
+            <Route path="/" element={<LiveTrafficPage />} />
+            <Route path="/dashboard" element={<LiveTrafficPage />} />
             <Route path="/traffic" element={<TrafficNetworkPage />} />
             <Route path="/map" element={<MapPage />} />
             <Route path="/graph" element={<GraphPage />} />
@@ -38,7 +35,7 @@ function App() {
             <Route path="/architecture" element={<ArchitecturePage />} />
           </Route>
 
-          {/* Catch-all redirect to landing */}
+          {/* Catch-all redirect to the live traffic screen */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </BrowserRouter>

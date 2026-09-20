@@ -1,83 +1,82 @@
 import React from 'react';
 
-// Small shared primitives in the control center's existing visual language.
+// Shared operational-panel primitives (light control-room theme; tokens live in index.css).
 
 export const panelStyle = {
-  background: 'linear-gradient(135deg, rgba(16, 12, 34, 0.95) 0%, rgba(8, 6, 18, 0.98) 100%)',
-  border: '1px solid rgba(139, 92, 246, 0.2)',
-  borderRadius: '16px',
-  padding: '20px',
-  backdropFilter: 'blur(16px)',
+  background: 'var(--surface)',
+  border: '1px solid var(--border)',
+  borderRadius: 'var(--radius)',
+  padding: '14px 16px',
   display: 'flex',
   flexDirection: 'column',
-  gap: '14px',
+  gap: '12px',
 };
 
 export function Panel({ title, icon, right, children, style }) {
   return (
-    <div style={{ ...panelStyle, ...style }}>
+    <section style={{ ...panelStyle, ...style }}>
       {(title || right) && (
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '10px' }}>
-          <div style={{ fontSize: '0.95rem', fontWeight: 800, color: '#fff', display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '10px', borderBottom: '1px solid var(--border)', paddingBottom: '8px', margin: '-2px 0 0' }}>
+          <h2 style={{ fontSize: '0.74rem', fontWeight: 700, color: 'var(--text-2)', letterSpacing: '0.06em', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '8px' }}>
             {icon}
             {title}
-          </div>
+          </h2>
           {right}
-        </div>
+        </header>
       )}
       {children}
-    </div>
+    </section>
   );
 }
 
 export function PageHeader({ icon, title, subtitle, right }) {
   return (
-    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: '12px', flexWrap: 'wrap' }}>
       <div>
-        <h1 style={{ fontSize: '1.4rem', fontWeight: 800, color: '#fff', margin: 0, display: 'flex', alignItems: 'center', gap: '10px' }}>
+        <h1 style={{ fontSize: '1.15rem', fontWeight: 700, color: 'var(--text)', display: 'flex', alignItems: 'center', gap: '10px' }}>
           {icon}
           {title}
         </h1>
-        {subtitle && <p style={{ fontSize: '0.8rem', color: 'rgba(216, 207, 247, 0.75)', margin: '4px 0 0 0' }}>{subtitle}</p>}
+        {subtitle && <p style={{ fontSize: '0.82rem', color: 'var(--muted)', marginTop: '3px', maxWidth: '900px' }}>{subtitle}</p>}
       </div>
       {right}
     </div>
   );
 }
 
-export function Stat({ label, value, sub, color = '#fff' }) {
+export function Stat({ label, value, sub, color = 'var(--text)' }) {
   return (
-    <div style={{ background: 'rgba(0, 0, 0, 0.3)', border: '1px solid rgba(139, 92, 246, 0.15)', borderRadius: '10px', padding: '12px' }}>
-      <div style={{ fontSize: '0.66rem', color: 'rgba(196, 181, 253, 0.75)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>{label}</div>
-      <div style={{ fontSize: '1.25rem', fontWeight: 800, color, marginTop: '3px' }}>{value}</div>
-      {sub && <div style={{ fontSize: '0.68rem', color: 'rgba(196, 181, 253, 0.6)', marginTop: '2px' }}>{sub}</div>}
+    <div style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '8px 10px' }}>
+      <div style={{ fontSize: '0.66rem', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>{label}</div>
+      <div style={{ fontSize: '1.15rem', fontWeight: 700, color, marginTop: '2px', fontVariantNumeric: 'tabular-nums' }}>{value}</div>
+      {sub && <div style={{ fontSize: '0.68rem', color: 'var(--muted)', marginTop: '1px' }}>{sub}</div>}
     </div>
   );
 }
 
-export function StatGrid({ children, min = 160 }) {
-  return <div style={{ display: 'grid', gridTemplateColumns: `repeat(auto-fit, minmax(${min}px, 1fr))`, gap: '12px' }}>{children}</div>;
+export function StatGrid({ children, min = 150 }) {
+  return <div style={{ display: 'grid', gridTemplateColumns: `repeat(auto-fit, minmax(${min}px, 1fr))`, gap: '10px' }}>{children}</div>;
 }
 
 export function DataTable({ columns, rows, emptyText = 'No data yet.' }) {
   if (!rows || rows.length === 0) {
-    return <div style={{ color: 'rgba(196, 181, 253, 0.7)', fontSize: '0.8rem' }}>{emptyText}</div>;
+    return <div style={{ color: 'var(--muted)', fontSize: '0.82rem' }}>{emptyText}</div>;
   }
   return (
     <div style={{ overflowX: 'auto' }}>
-      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8rem' }}>
+      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.82rem' }}>
         <thead>
-          <tr style={{ textAlign: 'left', color: '#a78bfa', fontSize: '0.7rem', textTransform: 'uppercase' }}>
+          <tr style={{ textAlign: 'left', color: 'var(--muted)', fontSize: '0.68rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
             {columns.map((c) => (
-              <th key={c.key} style={{ padding: '8px 10px', borderBottom: '1px solid rgba(139, 92, 246, 0.2)' }}>{c.label}</th>
+              <th key={c.key} style={{ padding: '6px 10px', borderBottom: '2px solid var(--border)', fontWeight: 700 }}>{c.label}</th>
             ))}
           </tr>
         </thead>
         <tbody>
           {rows.map((row, i) => (
-            <tr key={row.id ?? i} style={{ borderBottom: '1px solid rgba(139, 92, 246, 0.08)', color: '#e2e8f0' }}>
+            <tr key={row.id ?? i} style={{ borderBottom: '1px solid var(--surface-3)', color: 'var(--text)' }}>
               {columns.map((c) => (
-                <td key={c.key} style={{ padding: '9px 10px' }}>{c.render ? c.render(row) : row[c.key]}</td>
+                <td key={c.key} style={{ padding: '7px 10px' }}>{c.render ? c.render(row) : row[c.key]}</td>
               ))}
             </tr>
           ))}
@@ -89,44 +88,43 @@ export function DataTable({ columns, rows, emptyText = 'No data yet.' }) {
 
 export function Note({ children, tone = 'info' }) {
   const tones = {
-    info: ['rgba(82, 39, 255, 0.1)', 'rgba(139, 92, 246, 0.25)'],
-    warn: ['rgba(245, 158, 11, 0.1)', 'rgba(245, 158, 11, 0.4)'],
-    error: ['rgba(239, 68, 68, 0.1)', 'rgba(239, 68, 68, 0.45)'],
-    ok: ['rgba(16, 185, 129, 0.1)', 'rgba(16, 185, 129, 0.4)'],
+    info: ['var(--info-bg)', 'var(--info)'],
+    warn: ['var(--amber-bg)', 'var(--amber)'],
+    error: ['var(--red-bg)', 'var(--red)'],
+    ok: ['var(--green-bg)', 'var(--green)'],
   };
-  const [bg, border] = tones[tone];
+  const [bg, edge] = tones[tone];
   return (
-    <div style={{ background: bg, border: `1px solid ${border}`, borderRadius: '8px', padding: '10px 14px', fontSize: '0.78rem', lineHeight: 1.5, color: 'rgba(226, 232, 240, 0.92)' }}>
+    <div style={{ background: bg, borderLeft: `3px solid ${edge}`, borderRadius: '0 var(--radius) var(--radius) 0', padding: '8px 12px', fontSize: '0.8rem', lineHeight: 1.5, color: 'var(--text)' }}>
       {children}
     </div>
   );
 }
 
 export function Btn({ onClick, disabled, children, tone = 'primary', title }) {
-  const bg =
-    tone === 'primary'
-      ? 'linear-gradient(135deg, #5227FF 0%, #A855F7 100%)'
-      : tone === 'ok'
-      ? 'rgba(16, 185, 129, 0.25)'
-      : 'rgba(255, 255, 255, 0.06)';
+  const styles = {
+    primary: { background: 'var(--charcoal)', color: '#fff', border: '1px solid var(--charcoal)' },
+    ok: { background: 'var(--green)', color: '#fff', border: '1px solid var(--green)' },
+    danger: { background: 'var(--red)', color: '#fff', border: '1px solid var(--red)' },
+    ghost: { background: 'var(--surface)', color: 'var(--text)', border: '1px solid var(--border-strong)' },
+  };
   return (
     <button
       onClick={onClick}
       disabled={disabled}
       title={title}
       style={{
-        background: disabled ? 'rgba(82, 39, 255, 0.2)' : bg,
-        border: tone === 'ok' ? '1px solid #10b981' : '1px solid rgba(168, 85, 247, 0.35)',
-        color: '#fff',
-        borderRadius: '8px',
-        padding: '9px 16px',
+        ...styles[tone],
+        borderRadius: 'var(--radius)',
+        padding: '7px 14px',
         fontSize: '0.8rem',
-        fontWeight: 700,
+        fontWeight: 600,
+        fontFamily: 'inherit',
         cursor: disabled ? 'not-allowed' : 'pointer',
-        display: 'flex',
+        display: 'inline-flex',
         alignItems: 'center',
         gap: '6px',
-        opacity: disabled ? 0.6 : 1,
+        opacity: disabled ? 0.5 : 1,
       }}
     >
       {children}

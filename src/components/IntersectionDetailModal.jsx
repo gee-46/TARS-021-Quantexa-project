@@ -3,58 +3,47 @@ import { MapPin } from 'lucide-react';
 import { useTraffic } from '../context/TrafficContext';
 import { Panel, Stat, StatGrid, fmt } from './ui';
 
-const signalColor = (s) => (s === 'GREEN' ? '#10b981' : s === 'YELLOW' ? '#f59e0b' : '#ef4444');
-
 export default function IntersectionDetailModal() {
   const { selectedIntersection: n, network, emergencyCorridorActive, emergencyRoute } = useTraffic();
 
   if (!n) {
-    return <Panel title="JUNCTION INSPECTOR" icon={<MapPin size={18} color="#00f5ff" />}><div style={{ color: 'rgba(196,181,253,.7)', fontSize: '0.8rem' }}>Waiting for simulation data…</div></Panel>;
+    return <Panel title="Junction inspector" icon={<MapPin size={15} />}><div style={{ color: 'var(--muted)', fontSize: '0.82rem' }}>Waiting for simulation data…</div></Panel>;
   }
   const onCorridor = emergencyCorridorActive && emergencyRoute.includes(n.id);
+  const green = n.signal === 'GREEN';
 
   return (
     <Panel
-      title={n.name}
-      icon={<MapPin size={18} color="#00f5ff" />}
-      right={
-        <span style={{ background: `${signalColor(n.signal)}20`, border: `1px solid ${signalColor(n.signal)}`, color: signalColor(n.signal), borderRadius: '999px', padding: '3px 10px', fontSize: '0.72rem', fontWeight: 800 }}>
-          {n.signal}
-        </span>
-      }
+      title={`${n.id} · ${n.name}`}
+      icon={<MapPin size={15} />}
+      right={<strong style={{ fontSize: '0.74rem', color: green ? 'var(--green)' : 'var(--red)' }}>● {n.signal}</strong>}
     >
-      <div style={{ fontSize: '0.72rem', color: '#c4b5fd' }}>
-        {n.id} · {n.phase}
-        {onCorridor && <span style={{ color: '#f87171', fontWeight: 700 }}> · on an ambulance route (corridor active)</span>}
+      <div style={{ fontSize: '0.78rem', color: 'var(--text-2)' }}>
+        {n.phase}
+        {onCorridor && <strong style={{ color: 'var(--green)' }}> · on an ambulance route (corridor active)</strong>}
       </div>
-
       <div>
-        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: 'rgba(196, 181, 253, 0.8)', marginBottom: '4px' }}>
-          <span>Queue load (scale: mean queue / {network?.queue_reference_vehicles} vehicles)</span>
-          <span style={{ fontWeight: 700, color: n.density > 85 ? '#ef4444' : '#00f5ff' }}>{n.density}%</span>
+        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: 'var(--muted)', marginBottom: 3 }}>
+          <span>Queue load (mean queue / {network?.queue_reference_vehicles} vehicles)</span>
+          <strong style={{ color: n.density > 85 ? 'var(--red)' : 'var(--text)' }}>{n.density}%</strong>
         </div>
-        <div style={{ height: '6px', borderRadius: '3px', background: 'rgba(255,255,255,0.08)' }}>
-          <div style={{ width: `${n.density}%`, height: '100%', borderRadius: '3px', background: n.density > 85 ? '#ef4444' : n.density > 55 ? '#f59e0b' : '#10b981' }} />
+        <div style={{ height: 8, borderRadius: 4, background: 'var(--surface-3)' }}>
+          <div style={{ width: `${n.density}%`, height: '100%', borderRadius: 4, background: n.density > 85 ? 'var(--red)' : n.density > 55 ? '#e0a100' : 'var(--green)' }} />
         </div>
       </div>
-
       <StatGrid min={110}>
         <Stat label="Mean queue" value={`${n.queue} veh`} sub={`starts at ${n.initialQueue}`} />
         <Stat label="Queue at end" value={n.finalQueue === undefined ? '—' : `${n.finalQueue} veh`} />
-        <Stat label="Mean head wait" value={`${fmt.n(n.meanHeadWait, 0)} s`} sub="front-of-queue vehicle" />
+        <Stat label="Mean head wait" value={`${fmt.n(n.meanHeadWait, 0)} s`} sub="front-of-queue" />
         <Stat label="Max head wait" value={`${fmt.n(n.maxHeadWait, 0)} s`} />
-        <Stat label="Green (plan in use)" value={`${n.signalDuration} s`} sub={`of ${network?.cycle_length} s cycle`} color="#a855f7" />
-        <Stat label="Solver plan" value={n.optimizedDuration === undefined ? 'run optimiser' : `${n.optimizedDuration} s`} color="#10b981" />
+        <Stat label="Green (plan)" value={`${n.signalDuration} s`} sub={`of ${network?.cycle_length} s cycle`} />
+        <Stat label="Solver plan" value={n.optimizedDuration === undefined ? 'run optimiser' : `${n.optimizedDuration} s`} color="var(--green)" />
       </StatGrid>
-
-      <div style={{ fontSize: '0.72rem', color: 'rgba(196, 181, 253, 0.75)', display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '6px' }}>
+      <div style={{ fontSize: '0.74rem', color: 'var(--muted)', display: 'flex', gap: 14, flexWrap: 'wrap' }}>
         <span>Adjacent: <strong>{n.connectedTo.join(' ↔ ') || 'none'}</strong></span>
         <span>Arrivals: <strong>{n.arrivalRate}/s</strong></span>
         <span>Cross street: <strong>{n.crossStreetRate ? `${n.crossStreetRate}/s` : 'not modelled'}</strong></span>
         <span>Bus share: <strong>{Math.round(n.busProbability * 100)}%</strong></span>
-      </div>
-      <div style={{ fontSize: '0.66rem', color: 'rgba(167, 139, 250, 0.6)' }}>
-        Signal colour is the simulator's cyclic rule on a looping model clock; values are simulated, not measured.
       </div>
     </Panel>
   );

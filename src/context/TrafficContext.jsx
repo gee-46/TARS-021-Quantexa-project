@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   getHealth,
   getScenarios,
@@ -37,6 +37,10 @@ export function TrafficProvider({ children }) {
   const [activeEvents, setActiveEvents] = useState([]);
   const [latestNotification, setLatestNotification] = useState(null);
   const [clock, setClock] = useState(0);
+  // Read-only data for the live story screen: the same ambulance run with and without the corridor (existing /api/emergency).
+  const [story, setStory] = useState({ status: 'none' });
+  const [storyPhase, setStoryPhase] = useState(null);
+  const storyToken = useRef(0);
 
   const pushEvent = useCallback((event) => {
     setActiveEvents((prev) => [
@@ -78,6 +82,16 @@ export function TrafficProvider({ children }) {
         setNetwork(net);
         setBaseline(base);
         setCurrent(base);
+        storyToken.current += 1;
+        const token = storyToken.current;
+        if (net.ambulances.length > 0) {
+          setStory({ status: 'loading' });
+          runEmergency({ scenario: id, seed: SEED, plan: base.plan })
+            .then((res) => storyToken.current === token && setStory({ status: 'ready', data: res }))
+            .catch((e) => storyToken.current === token && setStory({ status: 'error', error: e.message }));
+        } else {
+          setStory({ status: 'none' });
+        }
         setScenarioId(id);
         setSelectedIntersectionId(net.nodes[0].id);
         setBackend((b) => ({ ...b, status: 'online', error: null }));
@@ -235,6 +249,11 @@ export function TrafficProvider({ children }) {
     dismissNotification,
     pushEvent,
     notify,
+    // live story data + numeric model clock
+    story,
+    storyPhase,
+    setStoryPhase,
+    clock,
     // status
     simulationTime: fmtClock(clock),
     systemStatus: backend.status === 'online' ? 'ONLINE' : backend.status === 'offline' ? 'API OFFLINE' : 'CONNECTING',

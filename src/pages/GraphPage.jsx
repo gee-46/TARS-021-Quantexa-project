@@ -27,7 +27,7 @@ export default function GraphPage() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '22px', width: '100%' }}>
       <PageHeader
-        icon={<Share2 size={24} color="#a855f7" />}
+        icon={<Share2 size={24} color="#2a2f36" />}
         title="NETWORK GRAPH (NETWORKX)"
         subtitle="The junction graph is analysed with NetworkX on the backend: degree, centrality, cut junctions and ambulance shortest paths."
       />
@@ -68,7 +68,7 @@ export default function GraphPage() {
                 { key: 'degree', label: 'Degree' },
                 { key: 'betweenness', label: 'Betweenness', render: (n) => fmt.n(n.betweenness, 3) },
                 { key: 'closeness', label: 'Closeness', render: (n) => fmt.n(n.closeness, 3) },
-                { key: 'cut', label: 'Cut junction', render: (n) => (n.is_articulation_point ? <span style={{ color: '#f59e0b', fontWeight: 700 }}>yes: removing it splits the corridor</span> : 'no') },
+                { key: 'cut', label: 'Cut junction', render: (n) => (n.is_articulation_point ? <span style={{ color: '#b26a00', fontWeight: 700 }}>yes: removing it splits the corridor</span> : 'no') },
               ]}
               rows={g.nodes}
             />

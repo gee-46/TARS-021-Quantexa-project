@@ -5,7 +5,7 @@ import { getPareto, runAdaptive } from '../services/api';
 import { PageHeader, Panel, DataTable, Note, Btn, Stat, StatGrid, fmt } from '../components/ui';
 import PlotlyChart, { PALETTE } from '../components/PlotlyChart';
 
-const COLORS = ['#00f5ff', '#a855f7', '#10b981', '#f59e0b'];
+const COLORS = ['#1f6fd1', '#2a2f36', '#1b7f3a', '#b26a00'];
 
 function ParetoPanel() {
   const { scenarioId, seed, hasAmbulances, notify } = useTraffic();
@@ -37,12 +37,12 @@ function ParetoPanel() {
   const base = pts[0];
 
   return (
-    <Panel title="PARETO: AMBULANCE SPEED vs CIVILIAN DELAY" icon={<Scale size={18} color="#a855f7" />}>
+    <Panel title="PARETO: AMBULANCE SPEED vs CIVILIAN DELAY" icon={<Scale size={18} color="#2a2f36" />}>
       {!hasAmbulances ? (
         <Note tone="warn">Pick a scenario with an ambulance (D, E, F or Belagavi-inspired two-ambulance) to sweep emergency priority.</Note>
       ) : (
         <>
-          <div style={{ display: 'flex', gap: '14px', alignItems: 'center', flexWrap: 'wrap', fontSize: '0.78rem', color: '#e2e8f0' }}>
+          <div style={{ display: 'flex', gap: '14px', alignItems: 'center', flexWrap: 'wrap', fontSize: '0.78rem', color: 'var(--text)' }}>
             <label>
               Cross-street demand: <strong>{cross.toFixed(2)}</strong> veh/s per junction{' '}
               <input type="range" min="0" max="0.8" step="0.05" value={cross} onChange={(e) => setCross(parseFloat(e.target.value))} />
@@ -52,14 +52,14 @@ function ParetoPanel() {
           {err && <Note tone="error">{err}</Note>}
           {sel && (
             <>
-              <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap', fontSize: '0.78rem', color: '#e2e8f0' }}>
+              <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap', fontSize: '0.78rem', color: 'var(--text)' }}>
                 <label>
                   Emergency priority λ: <strong>{sel.lambda_param}</strong>{' '}
                   <input type="range" min="0" max={pts.length - 1} step="1" value={Math.min(lamIdx, pts.length - 1)} onChange={(e) => setLamIdx(parseInt(e.target.value, 10))} />
                 </label>
                 <label>
                   Cost axis:{' '}
-                  <select value={xmode} onChange={(e) => setXmode(e.target.value)} style={{ background: 'rgba(15,12,35,.9)', color: '#e2e8f0', border: '1px solid rgba(139,92,246,.4)', borderRadius: '6px' }}>
+                  <select value={xmode} onChange={(e) => setXmode(e.target.value)} style={{ background: 'var(--surface)', color: 'var(--text)', border: '1px solid var(--border-strong)', borderRadius: '6px' }}>
                     <option value="cross">Cross-street delay (who pays)</option>
                     <option value="total">Total civilian delay</option>
                   </select>
@@ -96,8 +96,8 @@ function ParetoPanel() {
                 }}
               />
               <StatGrid>
-                <Stat label="Ambulance response" value={`${fmt.n(sel.mean_emergency_response_time, 0)} s`} sub={`${fmt.n(sel.mean_emergency_response_time - base.mean_emergency_response_time, 0)} s vs λ=0`} color="#10b981" />
-                <Stat label="Cross-street delay" value={fmt.int(sel.cross_street_person_delay)} sub={`${fmt.int(sel.cross_street_person_delay - base.cross_street_person_delay)} vs λ=0`} color="#f59e0b" />
+                <Stat label="Ambulance response" value={`${fmt.n(sel.mean_emergency_response_time, 0)} s`} sub={`${fmt.n(sel.mean_emergency_response_time - base.mean_emergency_response_time, 0)} s vs λ=0`} color="#1b7f3a" />
+                <Stat label="Cross-street delay" value={fmt.int(sel.cross_street_person_delay)} sub={`${fmt.int(sel.cross_street_person_delay - base.cross_street_person_delay)} vs λ=0`} color="#b26a00" />
                 <Stat label="Arterial delay" value={fmt.int(sel.arterial_person_delay)} sub={`${fmt.int(sel.arterial_person_delay - base.arterial_person_delay)} vs λ=0`} />
                 <Stat label="Total civilian delay" value={fmt.int(sel.person_delay)} sub={`${fmt.int(sel.person_delay - base.person_delay)} vs λ=0`} />
                 <Stat label="Jain fairness" value={fmt.n(sel.jain_fairness_index, 3)} />
@@ -149,11 +149,11 @@ function AdaptivePanel() {
     : [];
 
   return (
-    <Panel title="ADAPTIVE ROLLING-HORIZON vs SINGLE-SHOT PLAN" icon={<Timer size={18} color="#00f5ff" />}>
-      <div style={{ display: 'flex', gap: '14px', alignItems: 'center', flexWrap: 'wrap', fontSize: '0.78rem', color: '#e2e8f0' }}>
+    <Panel title="ADAPTIVE ROLLING-HORIZON vs SINGLE-SHOT PLAN" icon={<Timer size={18} color="#1f6fd1" />}>
+      <div style={{ display: 'flex', gap: '14px', alignItems: 'center', flexWrap: 'wrap', fontSize: '0.78rem', color: 'var(--text)' }}>
         <label>
           Re-optimise every{' '}
-          <select value={interval} onChange={(e) => setInterval_(parseInt(e.target.value, 10))} style={{ background: 'rgba(15,12,35,.9)', color: '#e2e8f0', border: '1px solid rgba(139,92,246,.4)', borderRadius: '6px' }}>
+          <select value={interval} onChange={(e) => setInterval_(parseInt(e.target.value, 10))} style={{ background: 'var(--surface)', color: 'var(--text)', border: '1px solid var(--border-strong)', borderRadius: '6px' }}>
             {[30, 60, 90, 120].map((v) => <option key={v} value={v}>{v} s</option>)}
           </select>
         </label>
@@ -197,7 +197,7 @@ export default function AnalyticsPage() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '22px', width: '100%' }}>
       <PageHeader
-        icon={<BarChart3 size={24} color="#38bdf8" />}
+        icon={<BarChart3 size={24} color="#1f6fd1" />}
         title="ANALYTICS & TRADE-OFFS"
         subtitle="Emergency-priority Pareto sweep and adaptive re-optimisation, both computed by the backend on the selected scenario."
       />

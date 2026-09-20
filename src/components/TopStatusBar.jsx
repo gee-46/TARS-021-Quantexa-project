@@ -1,263 +1,84 @@
 import React from 'react';
-import { Activity, Clock, Cpu, Server, X, ShieldAlert, CheckCircle2 } from 'lucide-react';
+import { X } from 'lucide-react';
 import { useTraffic } from '../context/TrafficContext';
 
-export default function TopStatusBar() {
-  const {
-    simulationTime,
-    systemStatus,
-    quantumEngineStatus,
-    isOptimized,
-    emergencyCorridorActive,
-    latestNotification,
-    dismissNotification,
-    scenarios,
-    scenarioId,
-    selectScenario,
-    network,
-    backend,
-    loading,
-  } = useTraffic();
-
-  const banners = (
-    <>
-      {backend.status === 'offline' && (
-        <div style={{ background: 'rgba(120, 20, 30, 0.9)', color: '#fecaca', fontSize: '0.75rem', padding: '8px 14px', borderTop: '1px solid rgba(239,68,68,.5)' }}>
-          QuantumFlow API unreachable: {backend.error}
-        </div>
-      )}
-      {network?.disclaimer && (
-        <div style={{ background: 'rgba(60, 40, 5, 0.85)', color: '#fde68a', fontSize: '0.7rem', padding: '6px 14px', borderTop: '1px solid rgba(245,158,11,.35)' }}>
-          {network.disclaimer}
-        </div>
-      )}
-    </>
+function Chip({ label, value, tone }) {
+  const color = { green: '#7be0a0', red: '#ff8a80', amber: '#ffcc66', info: '#9cc4f5' }[tone] || '#e6e9ec';
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.15, padding: '0 14px', borderLeft: '1px solid rgba(255,255,255,0.14)' }}>
+      <span style={{ fontSize: '0.6rem', letterSpacing: '0.08em', color: '#9aa4af', fontWeight: 600 }}>{label}</span>
+      <strong style={{ fontSize: '0.8rem', color, letterSpacing: '0.03em' }}>{value}</strong>
+    </div>
   );
+}
+
+function SignalMark() {
+  return (
+    <svg width="22" height="30" viewBox="0 0 22 30" aria-hidden="true">
+      <rect x="4" y="1" width="14" height="28" rx="4" fill="#1a1d22" stroke="#8b949e" />
+      <circle cx="11" cy="8" r="3.4" fill="#e5484d" />
+      <circle cx="11" cy="15" r="3.4" fill="#f2b632" />
+      <circle cx="11" cy="22" r="3.4" fill="#3ddc84" />
+    </svg>
+  );
+}
+
+export default function TopStatusBar() {
+  const { systemStatus, simulationTime, storyPhase, emergencyCorridorActive, latestNotification, dismissNotification, scenarios, scenarioId, selectScenario, network, backend, loading, hasAmbulances } = useTraffic();
+
+  const online = backend.status === 'online';
+  const corridorOn = emergencyCorridorActive || ['activating', 'clearing', 'done'].includes(storyPhase);
+  const emergency = !hasAmbulances ? ['N/A', null] : corridorOn ? ['ACTIVE', 'green'] : storyPhase === 'stuck' ? ['REQUESTED', 'red'] : ['READY', 'info'];
 
   return (
     <>
-    <header style={{
-      height: '64px',
-      background: 'rgba(10, 8, 22, 0.85)',
-      borderBottom: '1px solid rgba(139, 92, 246, 0.15)',
-      backdropFilter: 'blur(16px)',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      padding: '0 24px',
-      position: 'relative',
-      zIndex: 30,
-    }}>
-      {/* Title & Hub ID */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <div style={{
-            fontSize: '0.95rem',
-            fontWeight: 800,
-            letterSpacing: '0.04em',
-            textTransform: 'uppercase',
-            color: '#f8fafc',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-          }}>
-            <span style={{
-              width: '8px',
-              height: '8px',
-              borderRadius: '50%',
-              background: '#00f5ff',
-              boxShadow: '0 0 10px #00f5ff',
-            }} />
-            QUANTUMFORCE TRAFFIC CONTROL CENTER
+      <header style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 14, minHeight: 54, padding: '0 16px', background: 'var(--charcoal)', color: '#fff', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <SignalMark />
+          <div style={{ lineHeight: 1.15 }}>
+            <div style={{ fontSize: '0.98rem', fontWeight: 700, letterSpacing: '0.02em' }}>QuantumFlow</div>
+            <div style={{ fontSize: '0.66rem', color: '#9aa4af', letterSpacing: '0.09em' }}>URBAN TRAFFIC OPERATIONS CENTER</div>
           </div>
-          <span style={{
-            fontSize: '0.7rem',
-            fontWeight: 700,
-            background: 'rgba(82, 39, 255, 0.25)',
-            border: '1px solid rgba(168, 85, 247, 0.4)',
-            color: '#c4b5fd',
-            padding: '3px 8px',
-            borderRadius: '4px',
-          }}>
-            SIMULATION
-          </span>
         </div>
-      </div>
 
-      {/* Real-time Status Indicators */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '18px' }}>
-        {/* Active Mode Badge */}
-        {emergencyCorridorActive ? (
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '6px',
-            fontSize: '0.75rem',
-            fontWeight: 700,
-            padding: '4px 10px',
-            borderRadius: '6px',
-            background: 'rgba(239, 68, 68, 0.2)',
-            border: '1px solid rgba(239, 68, 68, 0.5)',
-            color: '#fca5a5',
-            animation: 'pulse 1.5s infinite',
-          }}>
-            <ShieldAlert size={14} color="#ef4444" />
-            EMERGENCY CORRIDOR ACTIVE
+        <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', rowGap: 6 }}>
+          <Chip label="SYSTEM" value={online ? 'ONLINE' : systemStatus} tone={online ? 'green' : 'red'} />
+          <Chip label="SIMULATION" value={online ? (loading ? 'LOADING' : 'ACTIVE') : 'OFFLINE'} tone={online ? (loading ? 'amber' : 'green') : 'red'} />
+          <Chip label="EMERGENCY MODE" value={emergency[0]} tone={emergency[1]} />
+          <Chip label="JUNCTIONS" value={network?.nodes?.length ?? '—'} />
+          <Chip label="MODEL CLOCK" value={simulationTime} />
+          <div style={{ paddingLeft: 14, borderLeft: '1px solid rgba(255,255,255,0.14)' }}>
+            <select
+              value={scenarioId}
+              disabled={loading || scenarios.length === 0}
+              onChange={(e) => selectScenario(e.target.value)}
+              aria-label="Scenario"
+              style={{ background: '#3a4049', color: '#fff', border: '1px solid #59616c', borderRadius: 4, padding: '5px 8px', fontSize: '0.78rem', maxWidth: 270, fontFamily: 'inherit' }}
+            >
+              {scenarios.map((s) => (
+                <option key={s.id} value={s.id}>{s.title}</option>
+              ))}
+            </select>
           </div>
-        ) : isOptimized ? (
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '6px',
-            fontSize: '0.75rem',
-            fontWeight: 700,
-            padding: '4px 10px',
-            borderRadius: '6px',
-            background: 'rgba(16, 185, 129, 0.2)',
-            border: '1px solid rgba(16, 185, 129, 0.5)',
-            color: '#6ee7b7',
-          }}>
-            <CheckCircle2 size={14} color="#10b981" />
-            SOLVER PLAN APPLIED
-          </div>
-        ) : (
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '6px',
-            fontSize: '0.75rem',
-            fontWeight: 600,
-            padding: '4px 10px',
-            borderRadius: '6px',
-            background: 'rgba(245, 158, 11, 0.15)',
-            border: '1px solid rgba(245, 158, 11, 0.35)',
-            color: '#fcd34d',
-          }}>
-            FIXED-TIME BASELINE
-          </div>
-        )}
-
-        {/* System Status */}
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '6px',
-          fontSize: '0.75rem',
-          color: 'rgba(226, 232, 240, 0.8)',
-        }}>
-          <Server size={14} color="#10b981" />
-          <span>System: <strong style={{ color: '#10b981' }}>{systemStatus}</strong></span>
         </div>
+      </header>
 
-        {/* Intersections */}
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '6px',
-          fontSize: '0.75rem',
-          color: 'rgba(226, 232, 240, 0.8)',
-        }}>
-          <Activity size={14} color="#00f5ff" />
-          <span>Junctions: <strong style={{ color: '#fff' }}>{network?.nodes?.length ?? '—'}</strong></span>
-        </div>
+      {backend.status === 'offline' && (
+        <div style={{ background: 'var(--red)', color: '#fff', fontSize: '0.78rem', padding: '6px 16px' }}>QuantumFlow API unreachable: {backend.error}</div>
+      )}
+      {network?.disclaimer && (
+        <div style={{ background: 'var(--amber-bg)', color: 'var(--amber)', fontSize: '0.74rem', padding: '5px 16px', borderBottom: '1px solid #f0d9a8' }}>{network.disclaimer}</div>
+      )}
 
-        {/* Quantum Engine */}
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '6px',
-          fontSize: '0.75rem',
-          color: 'rgba(226, 232, 240, 0.8)',
-        }}>
-          <Cpu size={14} color="#a855f7" />
-          <span>QAOA backend: <strong style={{ color: '#a855f7' }}>{quantumEngineStatus}</strong></span>
-        </div>
-
-        {/* Scenario selector (real scenarios from the backend) */}
-        <select
-          value={scenarioId}
-          disabled={loading || scenarios.length === 0}
-          onChange={(e) => selectScenario(e.target.value)}
-          aria-label="Scenario"
-          style={{ background: 'rgba(15,12,35,0.9)', color: '#e2e8f0', border: '1px solid rgba(139,92,246,0.4)', borderRadius: '6px', padding: '4px 8px', fontSize: '0.72rem', maxWidth: '260px' }}
-        >
-          {scenarios.map((s) => (
-            <option key={s.id} value={s.id}>{s.title}</option>
-          ))}
-        </select>
-
-        {/* Sim Time */}
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '6px',
-          fontSize: '0.78rem',
-          fontFamily: 'monospace',
-          fontWeight: 700,
-          background: 'rgba(0, 0, 0, 0.5)',
-          padding: '4px 10px',
-          borderRadius: '6px',
-          border: '1px solid rgba(139, 92, 246, 0.25)',
-          color: '#00f5ff',
-        }}>
-          <Clock size={14} color="#00f5ff" />
-          <span>{simulationTime}</span>
-        </div>
-      </div>
-
-      {/* Global Notification Banner */}
       {latestNotification && (
-        <div style={{
-          position: 'absolute',
-          top: '68px',
-          right: '24px',
-          zIndex: 50,
-          background: latestNotification.type === 'ERROR' || latestNotification.type === 'EMERGENCY'
-            ? 'rgba(35, 10, 15, 0.95)'
-            : 'rgba(15, 12, 35, 0.95)',
-          border: `1px solid ${
-            latestNotification.type === 'ERROR' || latestNotification.type === 'EMERGENCY'
-              ? 'rgba(239, 68, 68, 0.5)'
-              : 'rgba(168, 85, 247, 0.5)'
-          }`,
-          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.6)',
-          borderRadius: '8px',
-          padding: '12px 16px',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '12px',
-          maxWidth: '450px',
-          backdropFilter: 'blur(16px)',
-          animation: 'slideIn 0.25s ease-out',
-        }}>
+        <div style={{ position: 'fixed', top: 62, right: 16, zIndex: 50, maxWidth: 380, display: 'flex', gap: 10, alignItems: 'flex-start', padding: '10px 12px', background: 'var(--surface)', border: '1px solid var(--border-strong)', borderLeft: `4px solid ${latestNotification.type === 'ERROR' || latestNotification.type === 'EMERGENCY' ? 'var(--red)' : latestNotification.type === 'WARNING' ? 'var(--amber)' : 'var(--info)'}`, borderRadius: 4, boxShadow: '0 4px 14px rgba(0,0,0,0.15)', animation: 'slideIn 0.25s ease-out' }}>
           <div style={{ flex: 1 }}>
-            <div style={{
-              fontSize: '0.85rem',
-              fontWeight: 700,
-              color: latestNotification.type === 'ERROR' || latestNotification.type === 'EMERGENCY' ? '#f87171' : '#c084fc',
-            }}>
-              {latestNotification.title}
-            </div>
-            <div style={{ fontSize: '0.75rem', color: 'rgba(241, 245, 249, 0.85)', marginTop: '2px' }}>
-              {latestNotification.message}
-            </div>
+            <div style={{ fontSize: '0.82rem', fontWeight: 700 }}>{latestNotification.title}</div>
+            <div style={{ fontSize: '0.78rem', color: 'var(--text-2)', marginTop: 2 }}>{latestNotification.message}</div>
           </div>
-          <button
-            onClick={dismissNotification}
-            style={{
-              background: 'transparent',
-              border: 'none',
-              color: 'rgba(255, 255, 255, 0.6)',
-              cursor: 'pointer',
-              padding: '4px',
-            }}
-          >
-            <X size={16} />
-          </button>
+          <button onClick={dismissNotification} aria-label="Dismiss" style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)' }}><X size={16} /></button>
         </div>
       )}
-    </header>
-    {banners}
     </>
   );
 }

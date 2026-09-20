@@ -13,7 +13,7 @@ export default function EmergencyCorridorPage() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '22px', width: '100%' }}>
       <PageHeader
-        icon={<Siren size={24} color="#ef4444" />}
+        icon={<Siren size={24} color="#c62828" />}
         title="EMERGENCY CORRIDOR & CONFLICT RESOLUTION"
         subtitle="When two ambulances need the same junction, a small QUBO sequences them; QAOA, SA and Greedy are compared on it."
       />
@@ -28,7 +28,7 @@ export default function EmergencyCorridorPage() {
       )}
 
       {arb && (
-        <Panel title={`CONFLICT QUBO AT ${arb.conflict_intersection} — ${arb.num_qubits} QUBITS`} icon={<Scale size={18} color="#a855f7" />}>
+        <Panel title={`CONFLICT QUBO AT ${arb.conflict_intersection} — ${arb.num_qubits} QUBITS`} icon={<Scale size={18} color="#2a2f36" />}>
           <DataTable
             columns={[
               { key: 'solver', label: 'Solver', render: (r) => <strong>{r.solver_name.toUpperCase()}</strong> },
@@ -36,7 +36,7 @@ export default function EmergencyCorridorPage() {
               { key: 'energy', label: 'Energy', render: (r) => fmt.n(r.energy, 2) },
               { key: 'opt', label: 'Optimal?', render: (r) => (r.is_optimal ? 'yes' : 'no') },
               { key: 'rt', label: 'Runtime', render: (r) => `${fmt.n(r.runtime_seconds, 3)} s` },
-              { key: 'note', label: 'Note', render: (r) => <span style={{ color: 'rgba(196,181,253,.75)' }}>{r.note}</span> },
+              { key: 'note', label: 'Note', render: (r) => <span style={{ color: 'var(--muted)' }}>{r.note}</span> },
             ]}
             rows={Object.values(arb.records).map((r) => ({ id: r.solver_name, ...r }))}
           />
